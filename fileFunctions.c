@@ -14,7 +14,7 @@ int OuvrirEnEcriture(FILE** ptr_fichier, char* nom_fichier) {
 		OuvrirEnAppend
 ***************************/
 int OuvrirEnAppend(FILE** ptr_fichier, char* nom_fichier) {
-	if ((*ptr_fichier = fopen(nom_fichier, "a")) == NULL) {
+	if ((*ptr_fichier = fopen(nom_fichier, "a+")) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -53,9 +53,25 @@ int EcrireLigne(FILE* fichier, char* chaine) {
 /***************************
 		LireLigne
 ***************************/
-int LireLigne(FILE* fichier, char* buffer) {
-	if(fgets(buffer, BUFSIZ, fichier) == NULL) {
-		return -1;
+int LireLigne(FILE* fichier, int ligne, char* buffer) {
+	rewind(fichier);
+	int i = 1;
+	while(fgets(buffer, BUFSIZ, fichier) != NULL && i < ligne) {
+		i++;
 	}
 	return 0;
+}
+
+/***************************
+		NombreLigne
+***************************/
+int NombreLigne(FILE* fichier) {
+	int i = 0;
+	FILE* f = fichier;
+	rewind(f);
+	char* buffer = malloc(sizeof(char));
+	while(fgets(buffer, BUFSIZ, f) != NULL) {
+		i++;
+	}
+	return i;
 }
