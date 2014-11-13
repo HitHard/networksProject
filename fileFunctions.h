@@ -1,10 +1,11 @@
-/*! \file primitives.h
+/*! \file fileFunctions.h
 \brief Contient les primitives de gestions d'un fichier
 */
 #ifndef FILEFUNCTIONS_H
 #define FILEFUNCTIONS_H
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -48,7 +49,7 @@ int FermerFichier(FILE* fichier);
 
 
 /**
-* Ecrit une chaine de caractère dans un fichier
+* Ecrit une chaine de caractère à la fin d'un fichier
 * @param fichier : Pointeur du fichier sur lequel l'écriture doit avoir lieu
 * @param chaine : Chaine de caractère à écrire dans le fichier
 *
@@ -60,10 +61,20 @@ int EcrireLigne(FILE* fichier, char* chaine);
 /**
 * Lit une ligne d'un fichier
 * @param fichier : Pointeur du fichier à lire
+* @param ligne : Numéro de la ligne à lire
 * @param buffer : Buffer dans lequel sera stocké la ligne lue
 *
 * @return Retourne 0 si la lecture s'est passé correctement, -1 sinon. Retourne également -1 en fin de fichier
 */
-int LireLigne(FILE* fichier, char* buffer);
+int LireLigne(FILE* fichier, int ligne, char* buffer);
+
+
+/**
+* Donne le nombre de ligne d'un fichier ouvert en ecriture
+* @param fichier : Pointeur du fichier à lire
+*
+* @return Retourne le nombre de ligne du fichier
+*/
+int NombreLigne(FILE* fichier);
 
 #endif
