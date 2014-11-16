@@ -1,5 +1,6 @@
 #include "networkFunctions.h"
 #define ATTENTE_MAX 5
+#define PROTOCOL_HANDLERS_COUNT 1
 
 /***************************
 		CreerSocket
@@ -29,7 +30,7 @@ int creerSocket(u_short port, int type) {
 /***************************
 		processRequest
 ***************************/
-int processRequest(int* socket, int (*fonctionTraitement)(int*)) {
+int processRequest(int* socket, int (*fonctionTraitement)(int*, char* (fonctionHandleRequest)(char*)), char* (fonctionHandleRequest)(char*)) {
     //Création d'un processus fils
     int pid = fork();
     if(pid < 0) {
@@ -37,8 +38,12 @@ int processRequest(int* socket, int (*fonctionTraitement)(int*)) {
         return -1;
     } else if(pid == 0) {
         //Code processus fils
-        (*fonctionTraitement)(socket);
-        exit(0);
+        if((*fonctionTraitement)(socket, fonctionHandleRequest) < 0) {
+            perror("Erreur traitement");
+            exit(-1);
+        } else {
+            exit(0);
+        }
         //Fin code processus fils
     }
     return 0;
@@ -47,45 +52,80 @@ int processRequest(int* socket, int (*fonctionTraitement)(int*)) {
 /***************************
 		traiterRequeteTCP
 ***************************/
-int traiterRequeteTCP(int* socket) {
+int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
     int socketEchanges;
-    char message[BUFSIZ];
+    char request[BUFSIZ];
+    char* answer = NULL;
 
     //Synchronisation de la connexion avec le client
     socketEchanges = accept (*socket, (struct sockaddr *) 0, (unsigned int*) 0);
     if (socketEchanges == -1) {
         perror("Erreur accept");
-        exit(-1);
+        return -1;
     } else {
         printf("Accept réussis\n");
         //Lecture des données envoyées par le client
-        if(read(socketEchanges, message, BUFSIZ) == -1) {
+        if(read(socketEchanges, request, BUFSIZ) == -1) {
             perror("Erreur read");
+            return -1;
         } else {
-            //TODO : traiter ici la requete du client (lecture d'une ligne, ecriture,...)
-            printf("Message reçu : %s\n",message);
-            //TODO : générer la réponse à envoyer au client ici (données bidons pour le moment)
-            message[strlen(message) - 1] = '\0';
-            strcat(message, " - OK\0");
-            if(write(socketEchanges,message,strlen(message + 1)) == -1) {
+            printf("Message reçu : %s\n",request);
+            answer = fonctionHandleRequest(request);
+            if(write(socketEchanges,answer,strlen(answer) + 1) == -1) {
                 perror("Erreur write");
+                return -1;
             } else {
                 printf("Ecriture réussie\n");
             }
+            free(answer);
         }
     }
     //Fermeture de la socket d'échanges
     close(socketEchanges);
+    return 0;
+}
+
+/***************************
+		traiterRequeteUDP
+***************************/
+int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
+    char* answer = NULL;
+    char request[BUFSIZ];
+    struct sockaddr_in from;
+    int lenghtOfFrom;
+
+    lenghtOfFrom = sizeof(from);
+    if(recvfrom(*socket, request, 1024, 0, (struct sockaddr *) &from, (socklen_t *) &lenghtOfFrom) < 0) {
+        perror("Erreur recvfrom");
+        return -1;
+    } else {
+        printf("Message reçu : %s\n",request);
+        answer = fonctionHandleRequest(request);
+        if(sendto(*socket, answer, strlen(answer) + 1, 0, (struct sockaddr *) &from, (socklen_t) lenghtOfFrom) < 0) {
+            perror("Erreur sendto");
+            return -1;
+        } else {
+            printf("Ecriture réussie\n");
+        }
+        free(answer);
+    }
+    return 0;
 }
 
 /***************************
 		serverLoop
 ***************************/
-int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) {
+int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId) {
+    char* (*protocolHandlers[1])(char*) = {handleTestRequest};
     fd_set readFds;
     int descripteursSockets[nbSocketsTCP + nbSocketsUDP];
     int i;
     int nbSockets = nbSocketsTCP + nbSocketsUDP;
+
+    if(protocolHandlerId < 0 || protocolHandlerId > PROTOCOL_HANDLERS_COUNT - 1) {
+        printf("Identifiant du gestionnaire de protocole incorrect : %d\n", protocolHandlerId);
+        return -1;
+    }
 
     //Initialisation des sockets
     for(i = 0; i < nbSocketsTCP; i++) {
@@ -134,12 +174,11 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) 
             if(FD_ISSET(descripteursSockets[i], &readFds)) {
                 if(i < nbSocketsTCP) {
                     printf("Requete TCP arrivée sur la socket n°%d\n", i);
-                    processRequest(&descripteursSockets[i], traiterRequeteTCP);
-                    //TODO traitement requete TCP
+                    processRequest(&descripteursSockets[i], traiterRequeteTCP, protocolHandlers[protocolHandlerId]);
                 }
                 else {
                     printf("Requete UDP arrivée sur la socket n°%d\n", i);
-                    //TODO traitement requete UDP
+                    processRequest(&descripteursSockets[i], traiterRequeteUDP, protocolHandlers[protocolHandlerId]);
                 }
             }
         }

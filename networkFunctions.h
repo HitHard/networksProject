@@ -13,6 +13,7 @@
 #include <netdb.h>          // Fichier d'en-têtes contenant la définition de fonctions et de structures permettant d'obtenir des informations sur le réseau (gethostbyname(), struct hostent, ...)
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
+#include "protocolHandlers.h"
 
 /**
 * Créer une socket liee au port de numero "port"
@@ -27,27 +28,30 @@ int creerSocket(u_short port, int typeSocket);
 /**
 * Traite une requete TCP arrivee sur la socket pointee par le pointeur "socket"
 * @param socket : le pointeur pointant la socket sur laquelle est arrivee la requete
+* @param fonctionHandleRequest : pointeur sur la fonction d'analyse de la requete
 *
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
-int traiterRequeteTCP(int* socket);
+int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*));
 
 /**
 * Traite une requete UDP arrivee sur la socket pointee par le pointeur "socket"
 * @param socket : le pointeur pointant la socket sur laquelle est arrivee la requete
+* @param fonctionHandleRequest : pointeur sur la fonction d'analyse de la requete
 *
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
-//int traiterRequeteUDP(int* socket);
+int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*));
 
 /**
 * Créé un fils et utilise la fonction passee en argument pour traiter la requete arrivee sur la socket
 * @param socket : le pointeur pointant la socket sur laquelle est arrivee la requete
 * @param fonctionTraitement : pointeur sur la fonction qui traitera la requete (disinction TCP/UDP)
+* @param fonctionHandleRequest : pointeur sur la fonction d'analyse de la requete
 *
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
-int processRequest(int* socket, int (*fonctionTraitement)(int*));
+int processRequest(int* socket, int (*fonctionTraitement)(int*, char* (fonctionHandleRequest)(char*)), char* (fonctionHandleRequest)(char*));
 
 /**
 * Fonction d'intialistion du serveur :
@@ -61,9 +65,10 @@ int processRequest(int* socket, int (*fonctionTraitement)(int*));
 * @param nbSocketsTCP : nombre de sockets TCP a ouvrir
 * @param nbSocketsUDP : nombre de sockets UDP a ouvrir
 * @param portInitial : numero de port a partir duquel les sockets seront initialisees
+* @param protocolHandlerId : identifiant du gestionnaire de protocole (Protocole de Test = 0,...)
 *
 * @return Retourne -1 si une erreur survient
 */
-int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial);
+int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId);
 
 #endif
