@@ -30,7 +30,7 @@ int creerSocket(u_short port, int typeSocket);
 *
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
-//int traiterRequeteTCP(int* socket);
+int traiterRequeteTCP(int* socket);
 
 /**
 * Traite une requete UDP arrivee sur la socket pointee par le pointeur "socket"
@@ -39,6 +39,15 @@ int creerSocket(u_short port, int typeSocket);
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
 //int traiterRequeteUDP(int* socket);
+
+/**
+* Créé un fils et utilise la fonction passee en argument pour traiter la requete arrivee sur la socket
+* @param socket : le pointeur pointant la socket sur laquelle est arrivee la requete
+* @param fonctionTraitement : pointeur sur la fonction qui traitera la requete (disinction TCP/UDP)
+*
+* @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
+*/
+int processRequest(int* socket, int (*fonctionTraitement)(int*));
 
 /**
 * Fonction d'intialistion du serveur :

@@ -27,6 +27,58 @@ int creerSocket(u_short port, int type) {
 }
 
 /***************************
+		processRequest
+***************************/
+int processRequest(int* socket, int (*fonctionTraitement)(int*)) {
+    //Création d'un processus fils
+    int pid = fork();
+    if(pid < 0) {
+        perror("Erreur fork");
+        return -1;
+    } else if(pid == 0) {
+        //Code processus fils
+        (*fonctionTraitement)(socket);
+        exit(0);
+        //Fin code processus fils
+    }
+    return 0;
+}
+
+/***************************
+		traiterRequeteTCP
+***************************/
+int traiterRequeteTCP(int* socket) {
+    int socketEchanges;
+    char message[BUFSIZ];
+
+    //Synchronisation de la connexion avec le client
+    socketEchanges = accept (*socket, (struct sockaddr *) 0, (unsigned int*) 0);
+    if (socketEchanges == -1) {
+        perror("Erreur accept");
+        exit(-1);
+    } else {
+        printf("Accept réussis\n");
+        //Lecture des données envoyées par le client
+        if(read(socketEchanges, message, BUFSIZ) == -1) {
+            perror("Erreur read");
+        } else {
+            //TODO : traiter ici la requete du client (lecture d'une ligne, ecriture,...)
+            printf("Message reçu : %s\n",message);
+            //TODO : générer la réponse à envoyer au client ici (données bidons pour le moment)
+            message[strlen(message) - 1] = '\0';
+            strcat(message, " - OK\0");
+            if(write(socketEchanges,message,strlen(message + 1)) == -1) {
+                perror("Erreur write");
+            } else {
+                printf("Ecriture réussie\n");
+            }
+        }
+    }
+    //Fermeture de la socket d'échanges
+    close(socketEchanges);
+}
+
+/***************************
 		serverLoop
 ***************************/
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) {
@@ -77,10 +129,12 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) 
 
         for(i = 0; i < nbSockets; i++) {
             printf("IS SET %d?\n", i);
+            //TODO : retirer la ligne "sleep" (utilisée pour le debug)
             sleep(1);
             if(FD_ISSET(descripteursSockets[i], &readFds)) {
                 if(i < nbSocketsTCP) {
                     printf("Requete TCP arrivée sur la socket n°%d\n", i);
+                    processRequest(&descripteursSockets[i], traiterRequeteTCP);
                     //TODO traitement requete TCP
                 }
                 else {
