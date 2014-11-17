@@ -13,16 +13,18 @@
 #include <netdb.h>          // Fichier d'en-têtes contenant la définition de fonctions et de structures permettant d'obtenir des informations sur le réseau (gethostbyname(), struct hostent, ...)
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
+#include <time.h>
 #include "protocolHandlers.h"
 
 /**
 * Créer une socket liee au port de numero "port"
 * @param port : le numero du port auquel sera liee la socket
 * @param typeSocket : type de la socket a creer (generalement SOCK_STREAM [TCP] ou SOCK_DGRAM [UDP])
+* @param isListener : indique si la socket est une socket d'ecoute
 *
 * @return Retourne le descripteur de la socket (>0) si la creation s'est passe correctement, -1 sinon
 */
-int creerSocket(u_short port, int typeSocket);
+int creerSocket(u_short port, int typeSocket, int isListener);
 
 
 /**
@@ -70,5 +72,43 @@ int processRequest(int* socket, int (*fonctionTraitement)(int*, char* (fonctionH
 * @return Retourne -1 si une erreur survient
 */
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId);
+
+/**
+* Fonction d'intialistion du client:
+* Initialise la socket, se connecte au serveur puis, effectue des requetes aupres de ce dernier puis traite les reponses
+*
+* @param protocolType : type du protocole (SOCK_STREAM, SOCK_DGRAM)
+* @param nomDistant : nom distant (ou adresse) du serveur
+* @param portDistant : port du serveur
+* @param protocolHandlerId : identifiant du gestionnaire de protocole (Protocole de Test = 0,...)
+*
+* @return Retourne -1 si une erreur survient, 0 sinon
+*/
+int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int protocolHandlerId);
+
+/**
+* Fonction d'envoie de requete du client (version UDP)
+* Genere une requete a l'aide de la fonction fonctionGenerateRequest, l'envoie au serveur, recupere la reponse et la traite avec la fonction fonctionHandleAnswer
+*
+* @param socket : socket sur laquelle les donnees sont echangees
+* @param adresseDistante : structure representant l'adresse et le port du serveur distant
+* @param fonctionGenerateRequest : pointeur sur la fonction permettant de generer la requete
+* @param fonctionHandleAnswer : pointeur sur la fonction permettant de traiter la reponse
+*
+* @return Retourne -1 si une erreur survient, 0 sinon
+*/
+int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *));
+
+/**
+* Fonction d'envoie de requete du client (version TCP)
+* Genere une requete a l'aide de la fonction fonctionGenerateRequest, l'envoie au serveur, recupere la reponse et la traite avec la fonction fonctionHandleAnswer
+*
+* @param socket : socket sur laquelle les donnees sont echangees
+* @param fonctionGenerateRequest : pointeur sur la fonction permettant de generer la requete
+* @param fonctionHandleAnswer : pointeur sur la fonction permettant de traiter la reponse
+*
+* @return Retourne -1 si une erreur survient, 0 sinon
+*/
+int envoyerRequeteTCP(int* socket, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *));
 
 #endif

@@ -1,13 +1,14 @@
 #include "networkFunctions.h"
 #define ATTENTE_MAX 5
+#define SLEEP_CLIENT_MIN 0
+#define SLEEP_CLIENT_MAX 5
 #define PROTOCOL_HANDLERS_COUNT 1
 
 /***************************
 		CreerSocket
 ***************************/
-int creerSocket(u_short port, int type) {
+int creerSocket(u_short port, int type, int isListener) {
     int sock;
-    int retour;
     struct sockaddr_in adresse;
 
     if( (sock = socket(AF_INET, type, 0)) < 0) {
@@ -17,11 +18,14 @@ int creerSocket(u_short port, int type) {
 
     adresse.sin_family      = AF_INET;
     adresse.sin_port        = htons(port);
-    adresse.sin_addr.s_addr = INADDR_ANY;
 
-    if( (retour = bind(sock, (struct sockaddr *) &adresse, sizeof adresse)) < 0) {
-        perror("Nommage de la socket impossible\n");
-        return -1;
+    if(isListener) {
+        adresse.sin_addr.s_addr = INADDR_ANY;
+
+        if(bind(sock, (struct sockaddr *) &adresse, sizeof adresse) < 0) {
+            perror("Nommage de la socket impossible\n");
+            return -1;
+        }
     }
 
     return sock;
@@ -65,19 +69,23 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
     } else {
         printf("Accept réussis\n");
         //Lecture des données envoyées par le client
-        if(read(socketEchanges, request, BUFSIZ) == -1) {
-            perror("Erreur read");
-            return -1;
-        } else {
-            printf("Message reçu : %s\n",request);
-            answer = fonctionHandleRequest(request);
-            if(write(socketEchanges,answer,strlen(answer) + 1) == -1) {
-                perror("Erreur write");
+        close(*socket);
+        while(1) {
+            if(read(socketEchanges, request, BUFSIZ) < 0) {
+                perror("Erreur read");
                 return -1;
             } else {
-                printf("Ecriture réussie\n");
+                printf("Message reçu : %s\n",request);
+                answer = fonctionHandleRequest(request);
+                if(write(socketEchanges,answer,strlen(answer) + 1) < 0) {
+                    perror("Erreur write");
+                    free(answer);
+                    return -1;
+                } else {
+                    printf("Ecriture réussie\n");
+                }
+                free(answer);
             }
-            free(answer);
         }
     }
     //Fermeture de la socket d'échanges
@@ -95,7 +103,7 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
     int lenghtOfFrom;
 
     lenghtOfFrom = sizeof(from);
-    if(recvfrom(*socket, request, 1024, 0, (struct sockaddr *) &from, (socklen_t *) &lenghtOfFrom) < 0) {
+    if(recvfrom(*socket, request, BUFSIZ, 0, (struct sockaddr *) &from, (socklen_t *) &lenghtOfFrom) < 0) {
         perror("Erreur recvfrom");
         return -1;
     } else {
@@ -103,6 +111,7 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
         answer = fonctionHandleRequest(request);
         if(sendto(*socket, answer, strlen(answer) + 1, 0, (struct sockaddr *) &from, (socklen_t) lenghtOfFrom) < 0) {
             perror("Erreur sendto");
+            free(answer);
             return -1;
         } else {
             printf("Ecriture réussie\n");
@@ -129,7 +138,7 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 
     //Initialisation des sockets
     for(i = 0; i < nbSocketsTCP; i++) {
-        if( (descripteursSockets[i] = creerSocket(portInitial + i, SOCK_STREAM)) < 0) {
+        if( (descripteursSockets[i] = creerSocket(portInitial + i, SOCK_STREAM, 1)) < 0) {
             perror("Erreur de création de socket TCP\n");
             return -1;
         }
@@ -137,7 +146,7 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
     }
 
     for(; i < nbSockets; i++) {
-        if( (descripteursSockets[i] = creerSocket(portInitial + i, SOCK_DGRAM)) < 0 ) {
+        if( (descripteursSockets[i] = creerSocket(portInitial + i, SOCK_DGRAM, 1)) < 0 ) {
             perror("Erreur de création de socket UDP\n");
             return -1;
         }
@@ -168,9 +177,9 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
         }
 
         for(i = 0; i < nbSockets; i++) {
-            printf("IS SET %d?\n", i);
+            //printf("IS SET %d?\n", i);
             //TODO : retirer la ligne "sleep" (utilisée pour le debug)
-            sleep(1);
+            //sleep(1);
             if(FD_ISSET(descripteursSockets[i], &readFds)) {
                 if(i < nbSocketsTCP) {
                     printf("Requete TCP arrivée sur la socket n°%d\n", i);
@@ -192,4 +201,131 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
         printf("Socket n°%d fermee\n", i);
     }
     //Fin fermeture des sockets
+}
+
+/***************************
+		clientLoop
+***************************/
+int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int protocolHandlerId) {
+    char* (*fonctionGenerateRequest[1])(void) = {generateTestRequest};
+    int (*fonctionHandleAnswer[1])(char*) = {handleTestAnswer};
+
+    int socket;
+    struct hostent* hoteDistant;
+    struct sockaddr_in adresseDistante;
+
+    if(protocolHandlerId < 0 || protocolHandlerId > PROTOCOL_HANDLERS_COUNT - 1) {
+        printf("Identifiant du gestionnaire de protocole incorrect : %d\n", protocolHandlerId);
+        return -1;
+    }
+
+    socket = creerSocket(portDistant, protocolType, 0);
+    if((hoteDistant = gethostbyname(nomDistant)) == NULL) {
+        perror("Impossible de résourdre le nom du serveur distant");
+        return -1;
+    }
+
+    memcpy((char *)&adresseDistante.sin_addr, (char *)hoteDistant->h_addr, hoteDistant->h_length);
+    adresseDistante.sin_family = AF_INET;
+    adresseDistante.sin_port = htons(portDistant);
+
+    //Mode TCP -> connexion à l'hôte distant
+    if(protocolType == SOCK_STREAM) {
+        if (connect(socket, (struct sockaddr *)&adresseDistante, sizeof(adresseDistante)) == -1) {
+            perror("Connexion à l'hôte distant impossible");
+            return -1;
+        }
+    }
+
+    //Initialisation du générateur de nombre aléatoire
+    srand(time(NULL));
+
+    //Boucle principale du client (pour le moment infinie)
+    while(1) {
+        //Attente d'un temps aléatoire entre [SLEEP_CLIENT_MIN ; SLEEP_CLIENT_MAX[
+        sleep((rand()%(SLEEP_CLIENT_MAX - SLEEP_CLIENT_MIN)) + SLEEP_CLIENT_MIN);
+        if(protocolType == SOCK_STREAM) {
+            //Protocole TCP
+            if(envoyerRequeteTCP(&socket, fonctionGenerateRequest[0], fonctionHandleAnswer[0]) < 0) {
+                //Si erreur, on quitte la boucle pour fermer la socket
+                perror("Erreur envoyerRequeteTCP");
+                break;
+            }
+        } else {
+            //Protocole UDP
+            if(envoyerRequeteUDP(&socket, &adresseDistante, fonctionGenerateRequest[0], fonctionHandleAnswer[0]) < 0) {
+                //Si erreur, on quitte la boucle pour fermer la socket
+                perror("Erreur envoyerRequeteUDP");
+                break;
+            }
+        }
+    }
+    close(socket);
+    return 0;
+}
+
+/***************************
+		envoyerRequeteUDP
+***************************/
+int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *)) {
+    char* request;
+    char answer[BUFSIZ];
+    int lenghtOfFrom;
+
+    lenghtOfFrom = sizeof(*adresseDistante);
+
+    request = fonctionGenerateRequest();
+    printf("Envoie de : %s\n", request);
+    if(sendto(*socket, request, strlen(request) + 1, 0, (struct sockaddr *) adresseDistante, (socklen_t) lenghtOfFrom) < 0) {
+        perror("Erreur sendto");
+        free(request);
+        return -1;
+    } else {
+        printf("Ecriture réussie\n");
+        if(recvfrom(*socket, answer, BUFSIZ, 0, (struct sockaddr *) adresseDistante, (socklen_t *) &lenghtOfFrom) < 0) {
+            perror("Erreur recvfrom");
+            free(request);
+            return -1;
+        } else  {
+            printf("Message reçu : %s\n",answer);
+            if(fonctionHandleAnswer(answer) < 0) {
+                perror("Erreur handleAnswer");
+                free(request);
+                return -1;
+            }
+        }
+    }
+    free(request);
+    return 0;
+}
+
+/***************************
+		envoyerRequeteTCP
+***************************/
+int envoyerRequeteTCP(int* socket, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *)) {
+    char* request;
+    char answer[BUFSIZ];
+
+    request = fonctionGenerateRequest();
+    if(write(*socket,request,strlen(request) + 1) < 0) {
+        perror("Erreur write");
+        free(request);
+        return -1;
+    } else {
+        printf("Ecriture réussie\n");
+        if(read(*socket, answer, BUFSIZ) < 0) {
+            perror("Erreur read");
+            free(request);
+            return -1;
+        } else  {
+            printf("Message reçu : %s\n",answer);
+            if(fonctionHandleAnswer(answer) < 0) {
+                perror("Erreur handleAnswer");
+                free(request);
+                return -1;
+            }
+        }
+    }
+    free(request);
+    return 0;
 }
