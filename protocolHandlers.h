@@ -14,6 +14,24 @@
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
 #include <time.h>
+#include <pthread.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+/**
+* Fonction d'initialisation de la mémoire partagée pour le protocole Test
+*
+* @return 0 si l'initialisation reussie, -1 en cas d'erreur
+*/
+int testSharedInitializer(void);
+
+/**
+* Fonction de nettoyage de la mémoire partagée pour le protocole Test
+*
+* @return 0 si l'initialisation reussie, -1 en cas d'erreur
+*/
+int testSharedCleaner(void);
 
 /**
 * Fonction de traitement cote serveur - protocole Test

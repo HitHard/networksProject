@@ -125,11 +125,19 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 		serverLoop
 ***************************/
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId) {
+    int (*protocolSharedInitializer[1])(void) = {testSharedInitializer};
+    int (*protocolSharedCleaner[1])(void) = {testSharedCleaner};
     char* (*protocolHandlers[1])(char*) = {handleTestRequest};
+
     fd_set readFds;
     int descripteursSockets[nbSocketsTCP + nbSocketsUDP];
     int i;
     int nbSockets = nbSocketsTCP + nbSocketsUDP;
+
+    if(protocolSharedInitializer[protocolHandlerId]() < 0) {
+        perror("Erreur lors de l'initialisation de la mémoire partagée");
+        return -1;
+    }
 
     if(protocolHandlerId < 0 || protocolHandlerId > PROTOCOL_HANDLERS_COUNT - 1) {
         printf("Identifiant du gestionnaire de protocole incorrect : %d\n", protocolHandlerId);
@@ -201,6 +209,12 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
         printf("Socket n°%d fermee\n", i);
     }
     //Fin fermeture des sockets
+
+    if(protocolSharedCleaner[protocolHandlerId]() < 0) {
+        perror("Erreur lors du nettoyage de la mémoire partagée");
+        return -1;
+    }
+    return 0;
 }
 
 /***************************
