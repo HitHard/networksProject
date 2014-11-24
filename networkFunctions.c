@@ -2,7 +2,7 @@
 #define ATTENTE_MAX 5
 #define SLEEP_CLIENT_MIN 0
 #define SLEEP_CLIENT_MAX 5
-#define PROTOCOL_HANDLERS_COUNT 1
+#define PROTOCOL_HANDLERS_COUNT 2
 
 /***************************
 		CreerSocket
@@ -35,22 +35,11 @@ int creerSocket(u_short port, int type, int isListener) {
 		processRequest
 ***************************/
 int processRequest(int* socket, int (*fonctionTraitement)(int*, char* (fonctionHandleRequest)(char*)), char* (fonctionHandleRequest)(char*)) {
-    //Création d'un processus fils
-    int pid = fork();
-    if(pid < 0) {
-        perror("Erreur fork");
-        return -1;
-    } else if(pid == 0) {
-        //Code processus fils
-        if((*fonctionTraitement)(socket, fonctionHandleRequest) < 0) {
-            perror("Erreur traitement");
-            exit(-1);
-        } else {
-            exit(0);
-        }
-        //Fin code processus fils
-    }
-    return 0;
+    if((*fonctionTraitement)(socket, fonctionHandleRequest) < 0) {
+          perror("Erreur traitement");
+          return(-1);
+     }
+     return 0;
 }
 
 /***************************
@@ -69,8 +58,8 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
     } else {
         printf("Accept réussis\n");
         //Lecture des données envoyées par le client
-        close(*socket);
-        while(1) {
+        //close(*socket);
+        //while(1) {
             if(read(socketEchanges, request, BUFSIZ) < 0) {
                 perror("Erreur read");
                 return -1;
@@ -86,7 +75,7 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
                 }
                 free(answer);
             }
-        }
+        //}
     }
     //Fermeture de la socket d'échanges
     close(socketEchanges);
@@ -125,9 +114,9 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 		serverLoop
 ***************************/
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId) {
-    int (*protocolSharedInitializer[1])(void) = {testSharedInitializer};
-    int (*protocolSharedCleaner[1])(void) = {testSharedCleaner};
-    char* (*protocolHandlers[1])(char*) = {handleTestRequest};
+    int (*protocolSharedInitializer[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedInitializer, csmaCDSharedInitializer};
+    int (*protocolSharedCleaner[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedCleaner, csmaCDSharedCleaner};
+    char* (*protocolHandlers[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestRequest, handleCsmaCDRequest};
 
     fd_set readFds;
     int descripteursSockets[nbSocketsTCP + nbSocketsUDP];
@@ -221,8 +210,8 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 		clientLoop
 ***************************/
 int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int protocolHandlerId) {
-    char* (*fonctionGenerateRequest[1])(void) = {generateTestRequest};
-    int (*fonctionHandleAnswer[1])(char*) = {handleTestAnswer};
+    char* (*fonctionGenerateRequest[PROTOCOL_HANDLERS_COUNT])(void) = {generateTestRequest, generateCsmaCDRequest};
+    int (*fonctionHandleAnswer[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestAnswer, handleCsmaCDAnswer};
 
     int socket;
     struct hostent* hoteDistant;
@@ -233,7 +222,10 @@ int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int prot
         return -1;
     }
 
-    socket = creerSocket(portDistant, protocolType, 0);
+    if(protocolType == SOCK_DGRAM) {
+        socket = creerSocket(portDistant, protocolType, 0);
+    }
+
     if((hoteDistant = gethostbyname(nomDistant)) == NULL) {
         perror("Impossible de résourdre le nom du serveur distant");
         return -1;
@@ -243,31 +235,22 @@ int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int prot
     adresseDistante.sin_family = AF_INET;
     adresseDistante.sin_port = htons(portDistant);
 
-    //Mode TCP -> connexion à l'hôte distant
-    if(protocolType == SOCK_STREAM) {
-        if (connect(socket, (struct sockaddr *)&adresseDistante, sizeof(adresseDistante)) == -1) {
-            perror("Connexion à l'hôte distant impossible");
-            return -1;
-        }
-    }
-
-    //Initialisation du générateur de nombre aléatoire
-    srand(time(NULL));
-
     //Boucle principale du client (pour le moment infinie)
     while(1) {
         //Attente d'un temps aléatoire entre [SLEEP_CLIENT_MIN ; SLEEP_CLIENT_MAX[
-        sleep((rand()%(SLEEP_CLIENT_MAX - SLEEP_CLIENT_MIN)) + SLEEP_CLIENT_MIN);
+        sleep(entierAleatoireEntreBorne(SLEEP_CLIENT_MIN, SLEEP_CLIENT_MAX));
         if(protocolType == SOCK_STREAM) {
             //Protocole TCP
-            if(envoyerRequeteTCP(&socket, fonctionGenerateRequest[0], fonctionHandleAnswer[0]) < 0) {
+            socket = creerSocket(portDistant, protocolType, 0);
+            if(envoyerRequeteTCP(&socket, &adresseDistante, fonctionGenerateRequest[protocolHandlerId], fonctionHandleAnswer[protocolHandlerId]) < 0) {
                 //Si erreur, on quitte la boucle pour fermer la socket
                 perror("Erreur envoyerRequeteTCP");
                 break;
             }
+            close(socket);
         } else {
             //Protocole UDP
-            if(envoyerRequeteUDP(&socket, &adresseDistante, fonctionGenerateRequest[0], fonctionHandleAnswer[0]) < 0) {
+            if(envoyerRequeteUDP(&socket, &adresseDistante, fonctionGenerateRequest[protocolHandlerId], fonctionHandleAnswer[protocolHandlerId]) < 0) {
                 //Si erreur, on quitte la boucle pour fermer la socket
                 perror("Erreur envoyerRequeteUDP");
                 break;
@@ -289,7 +272,6 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
     lenghtOfFrom = sizeof(*adresseDistante);
 
     request = fonctionGenerateRequest();
-    printf("Envoie de : %s\n", request);
     if(sendto(*socket, request, strlen(request) + 1, 0, (struct sockaddr *) adresseDistante, (socklen_t) lenghtOfFrom) < 0) {
         perror("Erreur sendto");
         free(request);
@@ -316,11 +298,18 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 /***************************
 		envoyerRequeteTCP
 ***************************/
-int envoyerRequeteTCP(int* socket, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *)) {
+int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *)) {
     char* request;
     char answer[BUFSIZ];
 
     request = fonctionGenerateRequest();
+
+    if (connect(*socket, (struct sockaddr *) adresseDistante, sizeof(*adresseDistante)) == -1) {
+        perror("Connexion à l'hôte distant impossible");
+        free(request);
+        return -1;
+    }
+
     if(write(*socket,request,strlen(request) + 1) < 0) {
         perror("Erreur write");
         free(request);

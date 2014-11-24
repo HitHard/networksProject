@@ -13,8 +13,8 @@
 #include <netdb.h>          // Fichier d'en-têtes contenant la définition de fonctions et de structures permettant d'obtenir des informations sur le réseau (gethostbyname(), struct hostent, ...)
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
-#include <time.h>
 #include "protocolHandlers.h"
+#include "tools.h"
 
 /**
 * Créer une socket liee au port de numero "port"
@@ -109,6 +109,6 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 *
 * @return Retourne -1 si une erreur survient, 0 sinon
 */
-int envoyerRequeteTCP(int* socket, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *));
+int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (fonctionGenerateRequest)(void), int (fonctionHandleAnswer)(char *));
 
 #endif

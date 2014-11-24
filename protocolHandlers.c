@@ -6,36 +6,21 @@ static void* sharedDatas = NULL;
 //Structure permettant de stocker les donnees partagees entre les processus pour le protocole Test
 typedef struct {
     int requestNumber;
-    pthread_mutex_t mutex;
 } testSharedDatas;
+
+typedef struct {
+    int inUse;
+} csmaCDSharedDatas;
 
 /***************************
 		testSharedInitializer
 ***************************/
 int testSharedInitializer(void) {
-    int prot = PROT_READ | PROT_WRITE;
-    int flags = MAP_SHARED | MAP_ANONYMOUS;
-    if((sharedDatas = mmap(NULL, sizeof(testSharedDatas), prot, flags, -1, 0)) == MAP_FAILED) {
-        perror("Impossible de placer la structure en mémoire partagée");
-        return -1;
-    }
+    sharedDatas = (testSharedDatas*) malloc(sizeof(testSharedDatas));
 
     //Comme le pointeur est de type void*, on spécifie explicitement que c'est un pointeur sur une structure testSharedData
     testSharedDatas* datas = sharedDatas;
     datas->requestNumber = 0;
-    pthread_mutexattr_t attr;
-    if(pthread_mutexattr_init(&attr) != 0) {
-        perror("Erreur lors de l'initialisation de l'attribut mutex");
-        return -1;
-    }
-    if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) != 0) {
-        perror("Erreur lors de l'initialisation de la valeur 'process-shared' de l'attribut mutex");
-        return -1;
-    }
-    if(pthread_mutex_init(&datas->mutex, &attr) != 0) {
-        perror("Erreur lors de l'initialisation du mutex");
-        return -1;
-    }
     return 0;
 }
 
@@ -43,10 +28,7 @@ int testSharedInitializer(void) {
 		testSharedCleaner
 ***************************/
 int testSharedCleaner(void) {
-    if(munmap(sharedDatas, sizeof(testSharedDatas)) == -1) {
-        perror("Impossible de nettoyer la mémoire partagée");
-        return -1;
-    }
+    free(sharedDatas);
     return 0;
 }
 
@@ -56,10 +38,8 @@ int testSharedCleaner(void) {
 char* handleTestRequest(char* request) {
     char* answer = (char*) malloc(BUFSIZ * sizeof(char));
     testSharedDatas* datas = sharedDatas;
-    pthread_mutex_lock(&datas->mutex);
     snprintf(answer, BUFSIZ, "Request %i : '%s' - OK%c", datas->requestNumber, request, '\0');
     datas->requestNumber++;
-    pthread_mutex_unlock(&datas->mutex);
 
     return answer;
 }
@@ -81,5 +61,116 @@ char* generateTestRequest() {
 ***************************/
 int handleTestAnswer(char * answer) {
     printf("Message reçu du protocole de test : %s\n", answer);
+    return 0;
+}
+
+/***************************
+		csmaCDSharedInitializer
+***************************/
+int csmaCDSharedInitializer(void) {
+    sharedDatas = (csmaCDSharedDatas*) malloc(sizeof(csmaCDSharedDatas));
+
+    //Comme le pointeur est de type void*, on spécifie explicitement que c'est un pointeur sur une structure testSharedData
+    csmaCDSharedDatas* datas = sharedDatas;
+    datas->inUse = 0;
+    return 0;
+}
+
+/***************************
+		csmaCDSharedCleaner
+***************************/
+int csmaCDSharedCleaner(void) {
+    free(sharedDatas);
+    return 0;
+}
+
+/***************************
+		handleCsmaCDRequest
+***************************/
+char* handleCsmaCDRequest(char* request) {
+    char* answer = (char*) malloc(BUFSIZ * sizeof(char));
+    char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
+
+    char type = request[0];
+    char code = request[1];
+    char* idStr = extractSubstring(request, 2, 12);
+    char* tailleStr = extractSubstring(request, 3, 15);
+
+    int id = atoi(idStr);
+    int taille = atoi(tailleStr);
+    char* fonction = extractSubstring(request, 15,15 + taille);
+
+    csmaCDSharedDatas* datas = sharedDatas;
+
+    char* token = strtok(fonction, ",");
+
+    if(datas->inUse) {
+        code = 'E';
+        snprintf(answerFonction, BUFSIZ, "SB%c", '\0');
+    } else {
+        datas->inUse = 1;
+        if(strcmp(token,"w") == 0) {
+            snprintf(answerFonction, BUFSIZ, "wASKED%c", '\0');
+        } else if (strcmp(token,"cnt") == 0){
+            snprintf(answerFonction, BUFSIZ, "cntASKED%c", '\0');
+        } else if (strcmp(token, "rd") == 0) {
+            snprintf(answerFonction, BUFSIZ, "rdASKED%c", '\0');
+        } else {
+            code = 'E';
+            snprintf(answerFonction, BUFSIZ, "UF%c", '\0');
+        }
+        datas->inUse = 0;
+    }
+    snprintf(answer, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(answerFonction), answerFonction, '\0');
+
+    free(answerFonction);
+    free(idStr);
+    free(tailleStr);
+    free(fonction);
+
+    return answer;
+}
+
+/***************************
+		generateCsmaCDRequest
+***************************/
+char* generateCsmaCDRequest() {
+    time_t now;
+    char type = 'Q';
+    char code = 'F';
+    int id = 0;
+    char* fonction = (char*) malloc(BUFSIZ * sizeof(char));
+    char* request = (char*) malloc(BUFSIZ * sizeof(char));
+    time(&now);
+
+    int i = entierAleatoireEntreBorne(0,3);
+    switch(i) {
+        case 0 : {
+            snprintf(fonction, BUFSIZ, "w,Le processus %d a ecrit a %s%c", getpid(), ctime(&now), '\0');
+            break;
+        }
+
+        case 1 : {
+            snprintf(fonction, BUFSIZ, "cnt,%c", '\0');
+            break;
+        }
+
+        default : {
+            snprintf(fonction, BUFSIZ, "rd,%d%c", entierAleatoireEntreBorne(0,100), '\0');
+            break;
+        }
+    }
+
+    snprintf(request, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(fonction), fonction, '\0');
+
+    free(fonction);
+    return request;
+}
+
+/***************************
+		handleCsmaCDAnswer
+***************************/
+int handleCsmaCDAnswer(char * answer) {
+    printf("Protocole CSMA : réponse = %s\n", answer);
     return 0;
 }
