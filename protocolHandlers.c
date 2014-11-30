@@ -80,7 +80,8 @@ int csmaCDSharedInitializer(void) {
 		csmaCDSharedCleaner
 ***************************/
 int csmaCDSharedCleaner(void) {
-    free(sharedDatas);
+    csmaCDSharedDatas* datas = sharedDatas;
+    free(datas);
     return 0;
 }
 
@@ -88,45 +89,49 @@ int csmaCDSharedCleaner(void) {
 		handleCsmaCDRequest
 ***************************/
 char* handleCsmaCDRequest(char* request) {
-    char* answer = (char*) malloc(BUFSIZ * sizeof(char));
     char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
-
-    char type = request[0];
-    char code = request[1];
-    char* idStr = extractSubstring(request, 2, 12);
-    char* tailleStr = extractSubstring(request, 3, 15);
-
-    int id = atoi(idStr);
-    int taille = atoi(tailleStr);
-    char* fonction = extractSubstring(request, 15,15 + taille);
-
     csmaCDSharedDatas* datas = sharedDatas;
+    FILE* ressource = NULL;
+    trame* donnees = extractDatas(request);
 
-    char* token = strtok(fonction, ",");
+    char* token = strtok(donnees->fonction, ",");
 
     if(datas->inUse) {
-        code = 'E';
+        donnees->code = 'E';
         snprintf(answerFonction, BUFSIZ, "SB%c", '\0');
     } else {
         datas->inUse = 1;
+        if(OuvrirEnAppend(&ressource, "ressource") < 0) {
+            perror("Problème lors de l'ouverture du fichier");
+        }
         if(strcmp(token,"w") == 0) {
-            snprintf(answerFonction, BUFSIZ, "wASKED%c", '\0');
+            donnees->code = 'R';
+            token = strtok(NULL, ",");
+            if(EcrireLigne(ressource, token) < 0) {
+                perror("Problème lors de l'écriture dans le fichier");
+            }
+            snprintf(answerFonction, BUFSIZ, "ok,%c", '\0');
         } else if (strcmp(token,"cnt") == 0){
-            snprintf(answerFonction, BUFSIZ, "cntASKED%c", '\0');
+            donnees->code = 'R';
+            snprintf(answerFonction, BUFSIZ, "rdCNT,%c",'\0');
         } else if (strcmp(token, "rd") == 0) {
             snprintf(answerFonction, BUFSIZ, "rdASKED%c", '\0');
         } else {
-            code = 'E';
+            donnees->code = 'E';
             snprintf(answerFonction, BUFSIZ, "UF%c", '\0');
+        }
+        if(FermerFichier(ressource) < 0) {
+            perror("Problème lors de la fermeture du fichier");
         }
         datas->inUse = 0;
     }
-    snprintf(answer, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(answerFonction), answerFonction, '\0');
 
-    free(answerFonction);
-    free(idStr);
-    free(tailleStr);
-    free(fonction);
+    free(donnees->fonction);
+    donnees->fonction = answerFonction;
+
+    char* answer = writeTrame(donnees);
+    free(donnees->fonction);
+    free(donnees);
 
     return answer;
 }
@@ -136,34 +141,32 @@ char* handleCsmaCDRequest(char* request) {
 ***************************/
 char* generateCsmaCDRequest() {
     time_t now;
-    char type = 'Q';
-    char code = 'F';
-    int id = 0;
-    char* fonction = (char*) malloc(BUFSIZ * sizeof(char));
-    char* request = (char*) malloc(BUFSIZ * sizeof(char));
+    trame datas;
+    datas.type = 'Q';
+    datas.code = 'F';
+    datas.id = 0;
+    datas.fonction = (char*) malloc(BUFSIZ * sizeof(char));
     time(&now);
 
     int i = entierAleatoireEntreBorne(0,3);
     switch(i) {
         case 0 : {
-            snprintf(fonction, BUFSIZ, "w,Le processus %d a ecrit a %s%c", getpid(), ctime(&now), '\0');
+            snprintf(datas.fonction, BUFSIZ, "w,Le processus %d a ecrit a %s,%c", getpid(), ctime(&now), '\0');
             break;
         }
 
         case 1 : {
-            snprintf(fonction, BUFSIZ, "cnt,%c", '\0');
+            snprintf(datas.fonction, BUFSIZ, "cnt,%c", '\0');
             break;
         }
 
         default : {
-            snprintf(fonction, BUFSIZ, "rd,%d%c", entierAleatoireEntreBorne(0,100), '\0');
+            snprintf(datas.fonction, BUFSIZ, "rd,%d,%c", entierAleatoireEntreBorne(0,100), '\0');
             break;
         }
     }
-
-    snprintf(request, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(fonction), fonction, '\0');
-
-    free(fonction);
+    char* request = writeTrame(&datas);
+    free(datas.fonction);
     return request;
 }
 

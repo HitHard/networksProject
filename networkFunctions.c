@@ -154,7 +154,6 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
     //Demarrage des sockets
     for(i = 0; i < nbSockets; i++) {
         listen(descripteursSockets[i], ATTENTE_MAX);
-        printf("Socket n° %d placee en mode ecoute\n", i);
     }
 
     //Boucle principale serveur
@@ -163,7 +162,6 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
         FD_ZERO(&readFds);
         printf("FD_ZERO\n");
         for(i = 0; i < nbSockets; i++) {
-            printf("FD_SET %d\n", i);
             FD_SET(descripteursSockets[i], &readFds);
         }
         //Fin initialisation des descripteurs à lire

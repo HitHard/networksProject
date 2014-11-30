@@ -8,7 +8,7 @@ client: client.o fileFunctions.o networkFunctions.o protocolHandlers.o
 
 fileFunctions.o: fileFunctions.c fileFunctions.h
 	gcc -c fileFunctions.c -Wall -Wextra
-	
+
 networkFunctions.o: networkFunctions.c networkFunctions.h
 	gcc -c networkFunctions.c -Wall -Wextra
 

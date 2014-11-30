@@ -14,11 +14,8 @@
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
 #include <time.h>
-#include <pthread.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include "tools.h"
+#include "fileFunctions.h"
 
 /**
 * Fonction d'initialisation de la mémoire partagée pour le protocole Test
