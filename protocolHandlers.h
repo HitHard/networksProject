@@ -100,4 +100,29 @@ char* generateCsmaCDRequest();
 */
 int handleCsmaCDAnswer(char * answer);
 
+/**
+* Fonction de generation de requete cote client - protocole Polling
+* Genere un message contenant le pid et le temps local
+*
+* @return la chaine de caractere de la requete
+*/
+char* generatePollingRequest();
+
+/**
+* Fonction de traitement cote serveur - protocole Polling
+* @param request : chaine de caractere de la requete
+*
+* @return la chaine de caractere de la reponse (request + " - OK")
+*/
+char* handlePollingRequest(char* request);
+
+/**
+* Fonction de generation de reponse cote client - protocole Polling
+* Affiche simplement le message retourne par le serveur
+*
+* @param answer : la chaine de caractere de la reponse du serveur
+* @return 0
+*/
+int handlePollingAnswer(char * answer);
+
 #endif

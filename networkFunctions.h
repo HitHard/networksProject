@@ -16,6 +16,12 @@
 #include "protocolHandlers.h"
 #include "tools.h"
 
+
+typedef struct {
+    int socket;
+    struct sockaddr_in adresse;
+} clientUDP;
+
 /**
 * Créer une socket liee au port de numero "port"
 * @param port : le numero du port auquel sera liee la socket
@@ -35,6 +41,15 @@ int creerSocket(u_short port, int typeSocket, int isListener);
 * @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
 */
 int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*));
+
+/**
+* Traite une requete TCP arrivee sur la socket pointee par le pointeur "socket"
+* @param socket : le pointeur pointant la socket sur laquelle est arrivee la requete
+* @param fonctionHandleRequest : pointeur sur la fonction d'analyse de la requete
+*
+* @return Retourne 0 si le traitement de la requete s'est passe correctement, -1 sinon
+*/
+int traiterRequeteTCPPolling(int* socket, char* (fonctionHandleRequest)(char*));
 
 /**
 * Traite une requete UDP arrivee sur la socket pointee par le pointeur "socket"
@@ -74,6 +89,56 @@ int processRequest(int* socket, int (*fonctionTraitement)(int*, char* (fonctionH
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId);
 
 /**
+* Fonction d'intialistion du serveur :
+* Premiere etape :
+* Creation des sockets TCP et UDP a partir du numero de port "portInitial"
+* Ainsi si l'on souhaite creer n sockets TCP et m sockets UDP a partir du port k, les sockets TCP seront ouvertes sur les ports [k..k+n] et les sockets UDP sur les ports [k+n+1..k+n+1+m]
+*
+* Deuxieme etape :
+* La fonction initialise la boucle principale du serveur qui demandera à chaque client connecté si ils ont des requete et les traitera. Il ajoutera aussi à une liste tout les clients se connectant
+*
+* @param nbSocketsTCP : nombre de sockets TCP a ouvrir
+* @param nbSocketsUDP : nombre de sockets UDP a ouvrir
+* @param portInitial : numero de port a partir duquel les sockets seront initialisees
+*
+* @return Retourne -1 si une erreur survient
+*/
+int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial);
+
+/**
+* Fonction d'ajout d'un client TCP dans la liste des clients TCP
+*
+* @param tableauClient : tableau contenant les clients TCP
+* @param nombreClient : nombre de client TCP
+* @param client : client à ajouter
+*
+* @return Retourne le nouveau tableau des clients TCP
+*/
+int* ajouterClientTCP(int* tableauClient, int* nombreClient, int client);
+
+/**
+* Fonction de retrait d'un client TCP dans la liste des clients TCP
+*
+* @param tableauClient : tableau contenant les clients TCP
+* @param nombreClient : nombre de client TCP
+* @param client : client à retirer
+*
+* @return Retourne le nouveau tableau des clients TCP
+*/
+int* retirerClientTCP(int* tableauClient, int* nombreClient, int client);
+
+/**
+* Fonction d'ajout d'un client UDP dans la liste des clients UDP
+*
+* @param tableauClient : tableau contenant les clients UDP
+* @param nombreClient : nombre de client UDP
+* @param client : client à ajouter
+*
+* @return Retourne le nouveau tableau des clients UDP
+*/
+clientUDP* ajouterClientUDP(clientUDP* tableauClient, int* nombreClient, clientUDP client);
+
+/**
 * Fonction d'intialistion du client:
 * Initialise la socket, se connecte au serveur puis, effectue des requetes aupres de ce dernier puis traite les reponses
 *
@@ -85,6 +150,19 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 * @return Retourne -1 si une erreur survient, 0 sinon
 */
 int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int protocolHandlerId);
+
+/**
+* Fonction d'intialistion du client:
+* Initialise la socket, se connecte au serveur puis, on attends que le serveur le sollicite.
+* Une fois solicité, le client effectue une requete aupres du serveur puis traite la reponses
+*
+* @param protocolType : type du protocole (SOCK_STREAM, SOCK_DGRAM)
+* @param nomDistant : nom distant (ou adresse) du serveur
+* @param portDistant : port du serveur
+*
+* @return Retourne -1 si une erreur survient, 0 sinon
+*/
+int clientPollingLoop(int protocolType, char* nomDistant, u_short portDistant);
 
 /**
 * Fonction d'envoie de requete du client (version UDP)
