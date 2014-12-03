@@ -2,6 +2,7 @@
 
 //Pointeur generique vers la memoire partagee
 static void* sharedDatas = NULL;
+static int maxLigne = -1;
 
 //Structure permettant de stocker les donnees partagees entre les processus pour le protocole Test
 typedef struct {
@@ -98,7 +99,7 @@ char* handleCsmaCDRequest(char* request) {
 
     if(datas->inUse) {
         donnees->code = 'E';
-        snprintf(answerFonction, BUFSIZ, "SB%c", '\0');
+        snprintf(answerFonction, BUFSIZ, "SB,%c", '\0');
     } else {
         datas->inUse = 1;
         if(OuvrirEnAppend(&ressource, "ressource") < 0) {
@@ -110,15 +111,25 @@ char* handleCsmaCDRequest(char* request) {
             if(EcrireLigne(ressource, token) < 0) {
                 perror("Problème lors de l'écriture dans le fichier");
             }
-            snprintf(answerFonction, BUFSIZ, "ok,%c", '\0');
+            snprintf(answerFonction, BUFSIZ, "wrtOk,%c", '\0');
         } else if (strcmp(token,"cnt") == 0){
             donnees->code = 'R';
-            snprintf(answerFonction, BUFSIZ, "rdCNT,%c",'\0');
+            int nbLignes = NombreLigne(ressource);
+            snprintf(answerFonction, BUFSIZ, "cntOk,%d,%c", nbLignes, '\0');
         } else if (strcmp(token, "rd") == 0) {
-            snprintf(answerFonction, BUFSIZ, "rdASKED%c", '\0');
+            int numLigne = atoi(strtok(NULL, ","));
+            char* buffer = (char *) malloc(BUFSIZ * sizeof(char));
+            if(LireLigne(ressource, numLigne, buffer) < 0) {
+                donnees->code = 'E';
+                snprintf(answerFonction, BUFSIZ, "IOOB,%c", '\0');
+            } else {
+                donnees->code = 'R';
+                snprintf(answerFonction, BUFSIZ, "rdOk,%s,%c", buffer, '\0');
+            }
+            free(buffer);
         } else {
             donnees->code = 'E';
-            snprintf(answerFonction, BUFSIZ, "UF%c", '\0');
+            snprintf(answerFonction, BUFSIZ, "UF,%c", '\0');
         }
         if(FermerFichier(ressource) < 0) {
             perror("Problème lors de la fermeture du fichier");
@@ -156,12 +167,14 @@ char* generateCsmaCDRequest() {
         }
 
         case 1 : {
-            snprintf(datas.fonction, BUFSIZ, "cnt,%c", '\0');
-            break;
+            if(maxLigne > -1) {
+                snprintf(datas.fonction, BUFSIZ, "rd,%d,%c", entierAleatoireEntreBorne(0,maxLigne), '\0');
+                break;
+            }
         }
 
         default : {
-            snprintf(datas.fonction, BUFSIZ, "rd,%d,%c", entierAleatoireEntreBorne(0,100), '\0');
+            snprintf(datas.fonction, BUFSIZ, "cnt,%c", '\0');
             break;
         }
     }
@@ -174,6 +187,50 @@ char* generateCsmaCDRequest() {
 		handleCsmaCDAnswer
 ***************************/
 int handleCsmaCDAnswer(char * answer) {
-    printf("Protocole CSMA : réponse = %s\n", answer);
+    printf("Traitement...\n");
+//    trame* donnees = extractDatas(answer);
+//    printf("Donnees extraites :\n");
+//    printf("\t- type = %c\n", donnees->type);
+//    printf("\t- code = %c\n", donnees->code);
+//    printf("\t- id = %d\n", donnees->id);
+//    printf("\t- taille = %d\n", donnees->id);
+//    printf("\t- fonction = %s\n", donnees->fonction);
+//    free(donnees->fonction);
+//    free(donnees);
+
+//    printf("Données extraites\n");
+//    char* token = strtok(donnees->fonction, ",");
+//    printf("Chaine decoupée\n");
+//    printf("token = %s\n", token);
+//    if(donnees->code = 'R') {
+//        if(strcmp(token,"rdOk") == 0) {
+//            token = strtok(NULL, ",");
+//            printf("Ligne lue : '%s'\n", token);
+//        } else if(strcmp(token,"wrtOk") == 0) {
+//            printf("Ecriture dans le fichier réussie\n");
+//        } else if(strcmp(token,"cntOk") == 0) {
+//            token = strtok(NULL, ",");
+//            printf("Nombre de lignes du fichier : %s\n", token);
+//            maxLigne = atoi(token);
+//        } else {
+//            printf("Impossible d'interpréter le résultat\n");
+//        }
+//    } else if(donnees->code = 'E') {
+//        if(strcmp(token, "SB") == 0) {
+//            int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
+//            printf("Serveur occupé, attente de %d secondes...\n", attente);
+//            sleep(attente);
+//            printf("Reprise...");
+//        } else {
+//            printf("Erreur, code erreur = %s\n", token);
+//        }
+//    } else {
+//        printf("Code non reconnue\n");
+//    }
+//    printf("libération fonction\n");
+//    free(donnees->fonction);
+//    printf("libération donnees\n");
+//    free(donnees);
+//    printf("retour\n");
     return 0;
 }

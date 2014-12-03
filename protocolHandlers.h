@@ -17,6 +17,8 @@
 #include "tools.h"
 #include "fileFunctions.h"
 
+#define MAX_ATTENTE_CSMA 4
+
 /**
 * Fonction d'initialisation de la mémoire partagée pour le protocole Test
 *

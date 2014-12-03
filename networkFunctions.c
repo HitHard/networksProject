@@ -64,14 +64,14 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
                 perror("Erreur read");
                 return -1;
             } else {
-                printf("Message reçu : %s\n",request);
+                printf("Message reçu : '%s'\n",request);
                 answer = fonctionHandleRequest(request);
                 if(write(socketEchanges,answer,strlen(answer) + 1) < 0) {
                     perror("Erreur write");
                     free(answer);
                     return -1;
                 } else {
-                    printf("Ecriture réussie\n");
+                    printf("Ecriture réussie : '%s'\n", answer);
                 }
                 free(answer);
             }
@@ -96,14 +96,14 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
         perror("Erreur recvfrom");
         return -1;
     } else {
-        printf("Message reçu : %s\n",request);
+        printf("Message reçu : '%s'\n",request);
         answer = fonctionHandleRequest(request);
         if(sendto(*socket, answer, strlen(answer) + 1, 0, (struct sockaddr *) &from, (socklen_t) lenghtOfFrom) < 0) {
             perror("Erreur sendto");
             free(answer);
             return -1;
         } else {
-            printf("Ecriture réussie\n");
+            printf("Ecriture réussie : '%s'\n", answer);
         }
         free(answer);
     }
@@ -275,13 +275,13 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
         free(request);
         return -1;
     } else {
-        printf("Ecriture réussie\n");
+        printf("Ecriture réussie : '%s'\n", request);
         if(recvfrom(*socket, answer, BUFSIZ, 0, (struct sockaddr *) adresseDistante, (socklen_t *) &lenghtOfFrom) < 0) {
             perror("Erreur recvfrom");
             free(request);
             return -1;
         } else  {
-            printf("Message reçu : %s\n",answer);
+            printf("Message reçu : '%s'\n",answer);
             if(fonctionHandleAnswer(answer) < 0) {
                 perror("Erreur handleAnswer");
                 free(request);
@@ -313,7 +313,7 @@ int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (f
         free(request);
         return -1;
     } else {
-        printf("Ecriture réussie\n");
+        printf("Ecriture réussie : '%s'\n", request);
         if(read(*socket, answer, BUFSIZ) < 0) {
             perror("Erreur read");
             free(request);

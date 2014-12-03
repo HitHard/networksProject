@@ -71,9 +71,10 @@ int NombreLigne(FILE* fichier) {
 	int i = 0;
 	FILE* f = fichier;
 	rewind(f);
-	char* buffer = malloc(sizeof(char));
+	char* buffer = (char *) malloc(BUFSIZ * sizeof(char));
 	while(fgets(buffer, BUFSIZ, f) != NULL) {
 		i++;
 	}
+	free(buffer);
 	return i;
 }
