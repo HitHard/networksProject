@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "tools.h"
+#include "fileFunctions.h"
 
 /**
 * Fonction d'initialisation de la mémoire partagée pour le protocole Test

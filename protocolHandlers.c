@@ -216,7 +216,55 @@ char* generatePollingRequest() {
         handlePollingRequest
 ***************************/
 char* handlePollingRequest(char* request) {
-    char* answer = (char*) malloc(BUFSIZ * sizeof(char));
+    char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
+    FILE* ressource = NULL;
+    trame* donnees = extractDatas(request);
+
+    char* token = strtok(donnees->fonction, ",");
+
+    if(OuvrirEnAppend(&ressource, "ressource") < 0) {
+        perror("Problème lors de l'ouverture du fichier");
+    }
+    if(strcmp(token,"w") == 0) {
+        donnees->code = 'R';
+        token = strtok(NULL, ",");
+        if(EcrireLigne(ressource, token) < 0) {
+            perror("Problème lors de l'écriture dans le fichier");
+        }
+        snprintf(answerFonction, BUFSIZ, "wrtOk,%c", '\0');
+    } else if (strcmp(token,"cnt") == 0){
+        donnees->code = 'R';
+        int nbLignes = NombreLigne(ressource);
+        snprintf(answerFonction, BUFSIZ, "cntOk,%d,%c", nbLignes, '\0');
+    } else if (strcmp(token, "rd") == 0) {
+        int numLigne = atoi(strtok(NULL, ","));
+        char* buffer = (char *) malloc(BUFSIZ * sizeof(char));
+        if(LireLigne(ressource, numLigne, buffer) < 0) {
+            donnees->code = 'E';
+            snprintf(answerFonction, BUFSIZ, "IOOB,%c", '\0');
+        } else {
+            donnees->code = 'R';
+            snprintf(answerFonction, BUFSIZ, "rdOk,%s,%c", buffer, '\0');
+        }
+        free(buffer);
+    } else {
+        donnees->code = 'E';
+        snprintf(answerFonction, BUFSIZ, "UF,%c", '\0');
+    }
+    if(FermerFichier(ressource) < 0) {
+        perror("Problème lors de la fermeture du fichier");
+    }
+
+    free(donnees->fonction);
+    donnees->fonction = answerFonction;
+
+    char* answer = writeTrame(donnees);
+    free(donnees->fonction);
+    free(donnees);
+
+    return answer;
+
+    /*char* answer = (char*) malloc(BUFSIZ * sizeof(char));
     char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
 
     char type = request[0];
@@ -248,7 +296,7 @@ char* handlePollingRequest(char* request) {
     free(tailleStr);
     free(fonction);
 
-    return answer;
+    return answer;*/
 }
 
 /***************************
