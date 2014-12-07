@@ -1,4 +1,4 @@
-window#include "fileFunctions.h"
+#include "fileFunctions.h"
 
 /***************************
 		OuvrirEnEcriture

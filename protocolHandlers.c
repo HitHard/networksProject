@@ -94,7 +94,6 @@ char* handleCsmaCDRequest(char* request) {
     csmaCDSharedDatas* datas = sharedDatas;
     FILE* ressource = NULL;
     trame* donnees = extractDatas(request);
-
     char* token = strtok(donnees->fonction, ",");
 
     if(datas->inUse) {
@@ -102,7 +101,7 @@ char* handleCsmaCDRequest(char* request) {
         snprintf(answerFonction, BUFSIZ, "SB,%c", '\0');
     } else {
         datas->inUse = 1;
-        if(OuvrirEnAppend(&ressource, "ressource") < 0) {
+        if(OuvrirEnAppend(&ressource, FILE_NAME) < 0) {
             perror("Problème lors de l'ouverture du fichier");
         }
         if(strcmp(token,"w") == 0) {
@@ -156,7 +155,6 @@ char* generateCsmaCDRequest() {
     trame datas;
     datas.type = 'Q';
     datas.code = 'F';
-    datas.id = 0;
     datas.fonction = (char*) malloc(BUFSIZ * sizeof(char));
     time(&now);
 
@@ -188,51 +186,36 @@ char* generateCsmaCDRequest() {
 		handleCsmaCDAnswer
 ***************************/
 int handleCsmaCDAnswer(char * answer) {
-    printf("Traitement...\n");
-//    trame* donnees = extractDatas(answer);
-//    printf("Donnees extraites :\n");
-//    printf("\t- type = %c\n", donnees->type);
-//    printf("\t- code = %c\n", donnees->code);
-//    printf("\t- id = %d\n", donnees->id);
-//    printf("\t- taille = %d\n", donnees->id);
-//    printf("\t- fonction = %s\n", donnees->fonction);
-//    free(donnees->fonction);
-//    free(donnees);
+    trame* donnees = extractDatas(answer);
 
-//    printf("Données extraites\n");
-//    char* token = strtok(donnees->fonction, ",");
-//    printf("Chaine decoupée\n");
-//    printf("token = %s\n", token);
-//    if(donnees->code = 'R') {
-//        if(strcmp(token,"rdOk") == 0) {
-//            token = strtok(NULL, ",");
-//            printf("Ligne lue : '%s'\n", token);
-//        } else if(strcmp(token,"wrtOk") == 0) {
-//            printf("Ecriture dans le fichier réussie\n");
-//        } else if(strcmp(token,"cntOk") == 0) {
-//            token = strtok(NULL, ",");
-//            printf("Nombre de lignes du fichier : %s\n", token);
-//            maxLigne = atoi(token);
-//        } else {
-//            printf("Impossible d'interpréter le résultat\n");
-//        }
-//    } else if(donnees->code = 'E') {
-//        if(strcmp(token, "SB") == 0) {
-//            int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
-//            printf("Serveur occupé, attente de %d secondes...\n", attente);
-//            sleep(attente);
-//            printf("Reprise...");
-//        } else {
-//            printf("Erreur, code erreur = %s\n", token);
-//        }
-//    } else {
-//        printf("Code non reconnue\n");
-//    }
-//    printf("libération fonction\n");
-//    free(donnees->fonction);
-//    printf("libération donnees\n");
-//    free(donnees);
-//    printf("retour\n");
+    char* token = strtok(donnees->fonction, ",");
+    if(donnees->code = 'R') {
+        if(strcmp(token,"rdOk") == 0) {
+            token = strtok(NULL, ",");
+            printf("Ligne lue : '%s'\n", token);
+        } else if(strcmp(token,"wrtOk") == 0) {
+            printf("Ecriture dans le fichier réussie\n");
+        } else if(strcmp(token,"cntOk") == 0) {
+            token = strtok(NULL, ",");
+            printf("Nombre de lignes du fichier : %s\n", token);
+            maxLigne = atoi(token);
+        } else {
+            printf("Impossible d'interpréter le résultat\n");
+        }
+    } else if(donnees->code = 'E') {
+        if(strcmp(token, "SB") == 0) {
+            int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
+            printf("Serveur occupé, attente de %d secondes...\n", attente);
+            sleep(attente);
+            printf("Reprise...\n");
+        } else {
+            printf("Erreur, code erreur = %s\n", token);
+        }
+    } else {
+        printf("Code non reconnue\n");
+    }
+    free(donnees->fonction);
+    free(donnees);
     return 0;
 }
 
@@ -243,7 +226,6 @@ char* generatePollingRequest() {
     time_t now;
     char type = 'Q';
     char code = 'F';
-    int id = 0;
     char* fonction = (char*) malloc(BUFSIZ * sizeof(char));
     char* request = (char*) malloc(BUFSIZ * sizeof(char));
     time(&now);
@@ -266,7 +248,7 @@ char* generatePollingRequest() {
         }
     }
 
-    snprintf(request, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(fonction), fonction, '\0');
+    snprintf(request, BUFSIZ, "%c%c%03d%s%c", type, code, strlen(fonction), fonction, '\0');
 
     free(fonction);
     return request;

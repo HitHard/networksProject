@@ -11,7 +11,6 @@
 typedef struct {
     char type;
     char code;
-    int id;
     int taille;
     char* fonction;
 } trame;
