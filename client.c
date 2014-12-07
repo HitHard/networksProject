@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     int protocoleTypes[2] = {SOCK_STREAM, SOCK_DGRAM};
     int protocole = extraireEntierNaturel(argv[1]);
     int portDistant = extraireEntierNaturel(argv[3]);
-    int procoleSession = extraireEntierNaturel(argv[4]);
+    int protocoleSession = extraireEntierNaturel(argv[4]);
 
     if(protocole < 0 || protocole > 1) {
         perror("Protocole specifié non valide (0->TCP, 1->UDP)");
@@ -44,14 +44,22 @@ int main(int argc, char* argv[]) {
         perror("Port spécifié non valide");
         exit(-1);
     }
-    if(procoleSession < 0) {
+    if(protocoleSession < 0) {
         perror("Protocole session a utiliser non valide");
         exit(-1);
     }
 
-
-    if(clientLoop(protocoleTypes[protocole], argv[2], portDistant, procoleSession) < 0) {
-        exit(-1);
+    if(protocoleSession != 2 ){
+        if(clientLoop(protocoleTypes[protocole], argv[2], portDistant, protocoleSession) < 0) {
+            perror("Erreur clientPollingLoop");
+            exit(-1);
+        }
+    }
+    else {
+        if(clientPollingLoop(protocoleTypes[protocole], argv[2], portDistant) < 0) {
+            perror("Erreur clientPollingLoop");
+            exit(-1);
+        }
     }
     exit(0);
 }
