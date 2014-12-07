@@ -71,15 +71,7 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
 					free(answer);
 					return -1;
 				} else {
-<<<<<<< HEAD
-<<<<<<< HEAD
-					printf("Ecriture réussie\n");
-=======
 					printf("Ecriture réussie : %s\n", answer);
->>>>>>> upstream/master
-=======
-					printf("Ecriture réussie : %s\n", answer);
->>>>>>> upstream/master
 				}
 				free(answer);
 			}
@@ -111,15 +103,7 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 			free(answer);
 			return -1;
 		} else {
-<<<<<<< HEAD
-<<<<<<< HEAD
-			printf("Ecriture réussie\n");
-=======
 			printf("Ecriture réussie : %s\n",answer);
->>>>>>> upstream/master
-=======
-			printf("Ecriture réussie : %s\n",answer);
->>>>>>> upstream/master
 		}
 		free(answer);
 	}
@@ -177,17 +161,9 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 	while(1) {
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
-<<<<<<< HEAD
-<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
 			printf("FD_SET %d\n", i);
-=======
-		for(i = 0; i < nbSockets; i++) {
->>>>>>> upstream/master
-=======
-		for(i = 0; i < nbSockets; i++) {
->>>>>>> upstream/master
 			FD_SET(descripteursSockets[i], &readFds);
 		}
 		//Fin initialisation des descripteurs à lire
@@ -234,15 +210,7 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 		serverPollingLoop
 ***************************/
 int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> upstream/master
-=======
-
->>>>>>> upstream/master
 	clientUDP clUDP;
 
 	fd_set readFds;
@@ -251,19 +219,16 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 	int nbSockets = nbSocketsTCP + nbSocketsUDP;
 
 	int nbClientTCP = 0;
-	int* listeClientTCP = (int*) calloc(nbSocketsTCP, sizeof(int));
+	int* listeClientTCP = NULL;
 	int nbClientUDP = 0;
-	clientUDP* listeClientUDP = (clientUDP*) calloc(nbSockets, sizeof(clientUDP));
+	clientUDP* listeClientUDP = NULL;
 
 	int sockTCP;
-	char* serveurRequest = "hr";
 	char buffer[BUFSIZ];
-	char* answer = NULL;
-	char request[BUFSIZ];
 
-	struct timeval temps;
-	temps.tv_sec = 0;
-	temps.tv_usec = 0;
+	struct timespec temps; //Temps d'attente pour le select
+	temps.tv_sec = 1;
+	temps.tv_nsec = 0;
 
 
 	//Initialisation des sockets
@@ -293,69 +258,29 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 	while(1) {
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
-<<<<<<< HEAD
-<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
-			printf("FD_SET %d\n", i);
-=======
-		for(i = 0; i < nbSockets; i++) {
->>>>>>> upstream/master
-=======
-		for(i = 0; i < nbSockets; i++) {
->>>>>>> upstream/master
 			FD_SET(descripteursSockets[i], &readFds);
 		}
 		//Fin initialisation des descripteurs à lire
 
 		//On demande à chaque client TCP s'ils ont une requete et on l'execute
 		for(i = 0; i < nbClientTCP; i++) {
-			memset(request, 0, sizeof(request));
-			printf("Polling socket TCP %d\n", listeClientTCP[i]);
-			if(write(listeClientTCP[i], serveurRequest, strlen(serveurRequest)) == -1) {
-				perror("Erreur 1e write");
-			}
-			else {
-				if(read(listeClientTCP[i], request, BUFSIZ) == -1 ) {
-					perror("Erreur read");
-				}
-				else {
-					printf("Recu : %s\n", request);
-					if(answer != NULL) memset(answer, 0, sizeof(answer));
-					answer = handlePollingRequest(request);
-					if(write(listeClientTCP[i], answer, strlen(answer)) == -1) {
-						perror("Erreur 2e write");
-					}
-				}
+			if(pollTCPClient(i, listeClientTCP, &nbClientTCP) == -1) {
+				i--;
 			}
 		}
 
 		//On demande à chaque client UDP s'ils ont une requete et on l'execute
 		for(i = 0; i < nbClientUDP; i++) {
-			memset(request, 0, sizeof(request));
-			printf("Polling socket UDP %d\n", listeClientUDP[i].socket);
-			if(sendto(listeClientUDP[i].socket, serveurRequest, strlen(serveurRequest), 0, (struct sockaddr *)&(listeClientUDP[i].adresse), sizeof(listeClientUDP[i].adresse)) == -1) {
-				perror("Erreur 1e sendto");
-			}
-			else {
-				int lenghtOfAdresse = sizeof(listeClientUDP[i].adresse);
-				if(recvfrom(listeClientUDP[i].socket, request, BUFSIZ, 0, (struct sockaddr *)&(listeClientUDP[i].adresse), (socklen_t *) &lenghtOfAdresse) == -1) {
-					perror("erreur recvfrom");
-				}
-				else {
-					printf("Recu : %s\n", request);
-					if(answer != NULL) memset(answer, 0, sizeof(answer));
-					answer = handlePollingRequest(request);
-					if(sendto(listeClientUDP[i].socket, answer, strlen(answer), 0, (struct sockaddr *)&(listeClientUDP[i].adresse), sizeof(listeClientUDP[i].adresse)) == -1) {
-						perror("Erreur 2e sendto");
-					}
-				}
+			if(pollUDPClient(i, listeClientUDP, &nbClientUDP) == -1) {
+				i--;
 			}
 		}
 
 
 		//Si on recoit une nouvelle connexion, on l'ajoute à la liste des clients
-		if(select(descripteursSockets[nbSockets - 1] + 1, &readFds, 0, 0, &temps) < 0) {
+		if(pselect(descripteursSockets[nbSockets - 1] + 1, &readFds, 0, 0, &temps, 0) < 0) {
 			perror("Erreur de lecture des descripteurs\n");
 			break; //En cas d'erreur on quitte la boucle pour fermer les sockets
 		}
@@ -364,7 +289,7 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 		for(i = 0; i < nbSockets; i++) {
 			printf("IS SET %d?\n", i);
 			//TODO : retirer la ligne "sleep" (utilisée pour le debug)
-			sleep(1);
+			//sleep(1);
 			if(FD_ISSET(descripteursSockets[i], &readFds)) {
 				if(i < nbSocketsTCP) {
 					printf("Requete TCP arrivée sur la socket n°%d\n", i);
@@ -381,9 +306,12 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 						perror("Erreur recvfrom");
 					}
 					else {
-						clUDP.socket = descripteursSockets[i];
-						clUDP.adresse = from;
-						listeClientUDP = ajouterClientUDP(listeClientUDP, &nbClientUDP, clUDP);
+						if(!strcmp(buffer,"c")) {
+							clUDP.socket = descripteursSockets[i];
+							clUDP.adresse = from;
+							listeClientUDP = ajouterClientUDP(listeClientUDP, &nbClientUDP, clUDP);
+
+						}
 					}
 				}
 			}
@@ -545,10 +473,111 @@ int clientPollingLoop(int protocolType, char* nomDistant, u_short portDistant) {
 }
 
 /***************************
+		pollTCPClient
+***************************/
+int pollTCPClient(int numeroClient, int* listeClient, int* nombreClient) {
+	char* serveurRequest = "hr";
+	char* answer = NULL;
+	char request[BUFSIZ];
+
+	memset(request, 0, sizeof(request));
+	printf("Polling socket TCP %d\n", listeClient[numeroClient]);
+	if(write(listeClient[numeroClient], serveurRequest, strlen(serveurRequest)) == -1) {
+		perror("Erreur 1e write");
+		listeClient = retirerClientTCP(listeClient, nombreClient, listeClient[numeroClient]);
+		return -1;
+	}
+	else {
+		if(read(listeClient[numeroClient], request, BUFSIZ) == -1 ) {
+			perror("Erreur read");
+			listeClient = retirerClientTCP(listeClient, nombreClient, listeClient[numeroClient]);
+			return -1;
+		}
+		else {
+			if(strlen(request) == 0) {
+				printf("Connexion au client reset. Retrait de la liste.\n");
+				listeClient = retirerClientTCP(listeClient, nombreClient, listeClient[numeroClient]);
+				return -1;
+			}
+			else {
+				printf("Recu : %s\n", request);
+				answer = handlePollingRequest(request);
+				if(write(listeClient[numeroClient], answer, strlen(answer)) == -1) {
+					perror("Erreur 2e write");
+					listeClient = retirerClientTCP(listeClient, nombreClient, listeClient[numeroClient]);
+					return -1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+/***************************
+		pollUDPClient
+***************************/
+int pollUDPClient(int numeroClient, clientUDP* listeClient, int* nombreClient) {
+	fd_set readFdsClientUDP;
+	char* serveurRequest = "hr";
+	char* answer = NULL;
+	char request[BUFSIZ];
+	struct timespec timeoutUDP;
+	timeoutUDP.tv_sec = 3;
+	timeoutUDP.tv_nsec = 0;
+
+	memset(request, 0, sizeof(request));
+	printf("Polling socket UDP %d\n", listeClient[numeroClient].socket);
+	if(sendto(listeClient[numeroClient].socket, serveurRequest, strlen(serveurRequest), 0, (struct sockaddr *)&(listeClient[numeroClient].adresse), sizeof(listeClient[numeroClient].adresse)) == -1) {
+		perror("Erreur 1e sendto");
+		listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+		return -1;
+	}
+	else {
+		FD_ZERO(&readFdsClientUDP);
+		FD_SET(listeClient[numeroClient].socket, &readFdsClientUDP);
+		if(pselect(listeClient[numeroClient].socket+1, &readFdsClientUDP, 0, 0, &timeoutUDP, 0) < 0) {
+			perror("Erreur select UDP");
+			listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+			return -1;
+		}
+		if(!FD_ISSET(listeClient[numeroClient].socket, &readFdsClientUDP)) {
+			printf("Connexion timeout. Retrait de la liste.\n");
+			listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+			return -1;
+		}
+		else {
+			int lenghtOfAdresse = sizeof(listeClient[numeroClient].adresse);
+			if(recvfrom(listeClient[numeroClient].socket, request, BUFSIZ, 0, (struct sockaddr *)&(listeClient[numeroClient].adresse), (socklen_t *) &lenghtOfAdresse) == -1) {
+				perror("Erreur recvfrom");
+				listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+				return -1;
+			}
+			else {
+				if(strlen(request) == 0) {
+					printf("Connexion au client reset. Retrait de la liste.\n");
+					listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+					return -1;
+				}
+				else {
+					printf("Recu : %s\n", request);
+					answer = handlePollingRequest(request);
+					if(sendto(listeClient[numeroClient].socket, answer, strlen(answer), 0, (struct sockaddr *)&(listeClient[numeroClient].adresse), sizeof(listeClient[numeroClient].adresse)) == -1) {
+						perror("Erreur 2e sendto");
+						listeClient = retirerClientUDP(listeClient, nombreClient, listeClient[numeroClient]);
+						return -1;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+/***************************
 		ajouterClientTCP
 ***************************/
 int* ajouterClientTCP(int* tableauClient, int* nombreClient, int client) {
-	tableauClient = realloc(tableauClient, *nombreClient+1);
+	tableauClient = realloc(tableauClient, (*nombreClient+1)*sizeof(int));
 	tableauClient[*nombreClient] = client;
 	(*nombreClient)++;
 	return tableauClient;
@@ -564,12 +593,17 @@ int* retirerClientTCP(int* tableauClient, int* nombreClient, int client) {
 		if(tableauClient[i] == client) {
 			clientTrouve = 1;
 		}
-		if(clientTrouve == 1) {
+		if(clientTrouve == 1 && i < *nombreClient-1) {
 			tableauClient[i] = tableauClient[i+1];
 		}
 	}
 	if(clientTrouve == 1) {
-		tableauClient = realloc(tableauClient, *nombreClient-1);
+		if(*nombreClient > 1) {
+			tableauClient = realloc(tableauClient, (*nombreClient-1)*sizeof(int));
+		}
+		else {
+			tableauClient = NULL;
+		}
 		(*nombreClient)--;
 	}
 	return tableauClient;
@@ -579,9 +613,35 @@ int* retirerClientTCP(int* tableauClient, int* nombreClient, int client) {
 		ajouterClientUDP
 ***************************/
 clientUDP* ajouterClientUDP(clientUDP* tableauClient, int* nombreClient, clientUDP client) {
-	tableauClient = realloc(tableauClient, *nombreClient+1);
+	tableauClient = (clientUDP*) realloc(tableauClient, (*nombreClient+1)*sizeof(struct clientUDP));
 	tableauClient[*nombreClient] = client;
 	(*nombreClient)++;
+	return tableauClient;
+}
+
+/***************************
+		retirerClientUDP
+***************************/
+clientUDP* retirerClientUDP(clientUDP* tableauClient, int* nombreClient, clientUDP client) {
+	int i;
+	int clientTrouve = 0;
+	for(i = 0; i < *nombreClient; i++) {
+		if(tableauClient[i].socket == client.socket) {
+			clientTrouve = 1;
+		}
+		if(clientTrouve == 1 && i < *nombreClient-1) {
+			tableauClient[i] = tableauClient[i+1];
+		}
+	}
+	if(clientTrouve == 1) {
+		if(*nombreClient > 1) {
+			tableauClient = realloc(tableauClient, (*nombreClient-1)*sizeof(struct clientUDP));
+		}
+		else {
+			tableauClient = NULL;
+		}
+		(*nombreClient)--;
+	}
 	return tableauClient;
 }
 
@@ -601,15 +661,7 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		free(request);
 		return -1;
 	} else {
-<<<<<<< HEAD
-<<<<<<< HEAD
-		printf("Ecriture réussie\n");
-=======
 		printf("Ecriture réussie : %s\n", request);
->>>>>>> upstream/master
-=======
-		printf("Ecriture réussie : %s\n", request);
->>>>>>> upstream/master
 		if(recvfrom(*socket, answer, BUFSIZ, 0, (struct sockaddr *) adresseDistante, (socklen_t *) &lenghtOfFrom) < 0) {
 			perror("Erreur recvfrom");
 			free(request);
@@ -647,15 +699,7 @@ int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		free(request);
 		return -1;
 	} else {
-<<<<<<< HEAD
-<<<<<<< HEAD
-		printf("Ecriture réussie\n");
-=======
 		printf("Ecriture réussie : %s\n", request);
->>>>>>> upstream/master
-=======
-		printf("Ecriture réussie : %s\n", request);
->>>>>>> upstream/master
 		if(read(*socket, answer, BUFSIZ) < 0) {
 			perror("Erreur read");
 			free(request);
