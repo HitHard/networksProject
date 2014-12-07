@@ -9,10 +9,10 @@
 #include <time.h>
 
 typedef struct {
-    char type;
-    char code;
-    int taille;
-    char* fonction;
+	char type;
+	char code;
+	int taille;
+	char* fonction;
 } trame;
 
 int entierAleatoireEntreBorne(int borneInf, int borneSup);

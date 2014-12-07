@@ -17,7 +17,7 @@
 #include "tools.h"
 
 
-typedef struct {
+typedef struct clientUDP {
     int socket;
     struct sockaddr_in adresse;
 } clientUDP;
@@ -106,6 +106,28 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial);
 
 /**
+* Poll un client TCP en lui demandant s'il a une requete, la recoit, l'execute et revoit la réponse
+*
+* @param numeroClient : numéro du client dans la liste des client TCP
+* @param listeClient : liste contenant les client TCP
+* @param nombreClient : pointeur sur le nombre de client TCP
+*
+* @return Retourne 0 si tout s'est bien passé, -1 sinon.
+*/
+int pollTCPClient(int numeroClient, int* listeClient, int* nombreClient);
+
+/**
+* Poll un client UDP en lui demandant s'il a une requete, la recoit, l'execute et revoit la réponse
+*
+* @param numeroClient : numéro du client dans la liste des client UDP
+* @param listeClient : liste contenant les client UDP
+* @param nombreClient : pointeur sur le nombre de client UDP
+*
+* @return Retourne 0 si tout s'est bien passé, -1 sinon.
+*/
+int pollUDPClient(int numeroClient, clientUDP* listeClient, int* nombreClient);
+
+/**
 * Fonction d'ajout d'un client TCP dans la liste des clients TCP
 *
 * @param tableauClient : tableau contenant les clients TCP
@@ -137,6 +159,17 @@ int* retirerClientTCP(int* tableauClient, int* nombreClient, int client);
 * @return Retourne le nouveau tableau des clients UDP
 */
 clientUDP* ajouterClientUDP(clientUDP* tableauClient, int* nombreClient, clientUDP client);
+
+/**
+* Fonction de retrait d'un client UDP dans la liste des clients UDP
+*
+* @param tableauClient : tableau contenant les clients UDP
+* @param nombreClient : nombre de client UDP
+* @param client : client à retirer
+*
+* @return Retourne le nouveau tableau des clients UDP
+*/
+clientUDP* retirerClientUDP(clientUDP* tableauClient, int* nombreClient, clientUDP client);
 
 /**
 * Fonction d'intialistion du client:

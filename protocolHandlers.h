@@ -18,7 +18,7 @@
 #include "fileFunctions.h"
 
 #define MAX_ATTENTE_CSMA 4
-#define FILE_NAME .ressource
+#define FILE_NAME ".ressource"
 
 /**
 * Fonction d'initialisation de la mémoire partagée pour le protocole Test
