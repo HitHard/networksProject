@@ -72,7 +72,11 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
 					return -1;
 				} else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 					printf("Ecriture réussie\n");
+=======
+					printf("Ecriture réussie : %s\n", answer);
+>>>>>>> upstream/master
 =======
 					printf("Ecriture réussie : %s\n", answer);
 >>>>>>> upstream/master
@@ -108,7 +112,11 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 			return -1;
 		} else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			printf("Ecriture réussie\n");
+=======
+			printf("Ecriture réussie : %s\n",answer);
+>>>>>>> upstream/master
 =======
 			printf("Ecriture réussie : %s\n",answer);
 >>>>>>> upstream/master
@@ -170,9 +178,13 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
 <<<<<<< HEAD
+<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
 			printf("FD_SET %d\n", i);
+=======
+		for(i = 0; i < nbSockets; i++) {
+>>>>>>> upstream/master
 =======
 		for(i = 0; i < nbSockets; i++) {
 >>>>>>> upstream/master
@@ -223,7 +235,11 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 ***************************/
 int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> upstream/master
 =======
 
 >>>>>>> upstream/master
@@ -278,9 +294,13 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
 <<<<<<< HEAD
+<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
 			printf("FD_SET %d\n", i);
+=======
+		for(i = 0; i < nbSockets; i++) {
+>>>>>>> upstream/master
 =======
 		for(i = 0; i < nbSockets; i++) {
 >>>>>>> upstream/master
@@ -582,7 +602,11 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		return -1;
 	} else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		printf("Ecriture réussie\n");
+=======
+		printf("Ecriture réussie : %s\n", request);
+>>>>>>> upstream/master
 =======
 		printf("Ecriture réussie : %s\n", request);
 >>>>>>> upstream/master
@@ -624,7 +648,11 @@ int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		return -1;
 	} else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		printf("Ecriture réussie\n");
+=======
+		printf("Ecriture réussie : %s\n", request);
+>>>>>>> upstream/master
 =======
 		printf("Ecriture réussie : %s\n", request);
 >>>>>>> upstream/master

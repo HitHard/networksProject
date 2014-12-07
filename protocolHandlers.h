@@ -17,6 +17,12 @@
 #include "tools.h"
 #include "fileFunctions.h"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+#define MAX_ATTENTE_CSMA 4
+#define FILE_NAME .ressource
+>>>>>>> upstream/master
 =======
 
 #define MAX_ATTENTE_CSMA 4

@@ -11,12 +11,18 @@ int entierAleatoireEntreBorne(int borneInf, int borneSup) {
 char* extractSubstring(char* str, int beginIndex, int endIndex) {
 	char* buffer = (char*) malloc(BUFSIZ*sizeof(char));
 <<<<<<< HEAD
+<<<<<<< HEAD
 	strncpy(buffer, str + beginIndex, endIndex - beginIndex);
 =======
+=======
+>>>>>>> upstream/master
 	char* p; char * b;
 	for(p = (str + beginIndex), b = buffer; p < (str + endIndex); p++, b++)
         *b = *p;
     *(b + 1) = '\0';
+<<<<<<< HEAD
+>>>>>>> upstream/master
+=======
 >>>>>>> upstream/master
 	return buffer;
 }
@@ -24,6 +30,7 @@ char* extractSubstring(char* str, int beginIndex, int endIndex) {
 trame* extractDatas(char* rawTrame) {
 	trame* donnees = (trame*) malloc (sizeof (trame));
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 	char* idStr = extractSubstring(rawTrame, 2, 12);
 	char* tailleStr = extractSubstring(rawTrame, 3, 15);
@@ -39,6 +46,8 @@ trame* extractDatas(char* rawTrame) {
 
 	return donnees;
 =======
+=======
+>>>>>>> upstream/master
 	char* tailleStr = extractSubstring(rawTrame, 2, 5);
 
 	donnees->type = rawTrame[0];

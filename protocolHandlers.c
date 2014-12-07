@@ -90,6 +90,7 @@ int csmaCDSharedCleaner(void) {
 		handleCsmaCDRequest
 ***************************/
 char* handleCsmaCDRequest(char* request) {
+<<<<<<< HEAD
     char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
     csmaCDSharedDatas* datas = sharedDatas;
     FILE* ressource = NULL;
@@ -337,9 +338,64 @@ char* handlePollingRequest(char* request) {
     free(idStr);
     free(tailleStr);
     free(fonction);
+=======
+    char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
+    csmaCDSharedDatas* datas = sharedDatas;
+    FILE* ressource = NULL;
+    trame* donnees = extractDatas(request);
+    char* token = strtok(donnees->fonction, ",");
+
+    if(datas->inUse) {
+        donnees->code = 'E';
+        snprintf(answerFonction, BUFSIZ, "SB,%c", '\0');
+    } else {
+        datas->inUse = 1;
+        if(OuvrirEnAppend(&ressource, FILE_NAME) < 0) {
+            perror("Problème lors de l'ouverture du fichier");
+        }
+        if(strcmp(token,"w") == 0) {
+            donnees->code = 'R';
+            token = strtok(NULL, ",");
+            if(EcrireLigne(ressource, token) < 0) {
+                perror("Problème lors de l'écriture dans le fichier");
+            }
+            snprintf(answerFonction, BUFSIZ, "wrtOk,%c", '\0');
+        } else if (strcmp(token,"cnt") == 0){
+            donnees->code = 'R';
+            int nbLignes = NombreLigne(ressource);
+            snprintf(answerFonction, BUFSIZ, "cntOk,%d,%c", nbLignes, '\0');
+        } else if (strcmp(token, "rd") == 0) {
+            int numLigne = atoi(strtok(NULL, ","));
+            char* buffer = (char *) malloc(BUFSIZ * sizeof(char));
+            if(LireLigne(ressource, numLigne, buffer) < 0) {
+                donnees->code = 'E';
+                snprintf(answerFonction, BUFSIZ, "IOOB,%c", '\0');
+            } else {
+                donnees->code = 'R';
+                snprintf(answerFonction, BUFSIZ, "rdOk,%s,%c", buffer, '\0');
+            }
+            free(buffer);
+        } else {
+            donnees->code = 'E';
+            snprintf(answerFonction, BUFSIZ, "UF,%c", '\0');
+        }
+        if(FermerFichier(ressource) < 0) {
+            perror("Problème lors de la fermeture du fichier");
+        }
+        datas->inUse = 0;
+    }
+
+    free(donnees->fonction);
+    donnees->fonction = answerFonction;
+
+    char* answer = writeTrame(donnees);
+    free(donnees->fonction);
+    free(donnees);
+>>>>>>> upstream/master
 
     return answer;*/
 }
+
 
 /***************************
         handlePollingAnswer
@@ -354,9 +410,80 @@ int handlePollingAnswer(char * answer) {
 ***************************/
 char* generatePollingRequest() {
     time_t now;
+    trame datas;
+    datas.type = 'Q';
+    datas.code = 'F';
+    datas.fonction = (char*) malloc(BUFSIZ * sizeof(char));
+    time(&now);
+
+    int i = entierAleatoireEntreBorne(0,3);
+    switch(i) {
+        case 0 : {
+            snprintf(datas.fonction, BUFSIZ, "w,Le processus %d a ecrit a %s,%c", getpid(), ctime(&now), '\0');
+            break;
+        }
+
+        case 1 : {
+            if(maxLigne > -1) {
+                snprintf(datas.fonction, BUFSIZ, "rd,%d,%c", entierAleatoireEntreBorne(0,maxLigne), '\0');
+                break;
+            }
+        }
+
+        default : {
+            snprintf(datas.fonction, BUFSIZ, "cnt,%c", '\0');
+            break;
+        }
+    }
+    char* request = writeTrame(&datas);
+    free(datas.fonction);
+    return request;
+}
+
+/***************************
+		handleCsmaCDAnswer
+***************************/
+int handleCsmaCDAnswer(char * answer) {
+    trame* donnees = extractDatas(answer);
+
+    char* token = strtok(donnees->fonction, ",");
+    if(donnees->code = 'R') {
+        if(strcmp(token,"rdOk") == 0) {
+            token = strtok(NULL, ",");
+            printf("Ligne lue : '%s'\n", token);
+        } else if(strcmp(token,"wrtOk") == 0) {
+            printf("Ecriture dans le fichier réussie\n");
+        } else if(strcmp(token,"cntOk") == 0) {
+            token = strtok(NULL, ",");
+            printf("Nombre de lignes du fichier : %s\n", token);
+            maxLigne = atoi(token);
+        } else {
+            printf("Impossible d'interpréter le résultat\n");
+        }
+    } else if(donnees->code = 'E') {
+        if(strcmp(token, "SB") == 0) {
+            int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
+            printf("Serveur occupé, attente de %d secondes...\n", attente);
+            sleep(attente);
+            printf("Reprise...\n");
+        } else {
+            printf("Erreur, code erreur = %s\n", token);
+        }
+    } else {
+        printf("Code non reconnue\n");
+    }
+    free(donnees->fonction);
+    free(donnees);
+    return 0;
+}
+
+/***************************
+        generatePollingRequest
+***************************/
+char* generatePollingRequest() {
+    time_t now;
     char type = 'Q';
     char code = 'F';
-    int id = 0;
     char* fonction = (char*) malloc(BUFSIZ * sizeof(char));
     char* request = (char*) malloc(BUFSIZ * sizeof(char));
     time(&now);
@@ -379,7 +506,7 @@ char* generatePollingRequest() {
         }
     }
 
-    snprintf(request, BUFSIZ, "%c%c%010d%03d%s%c", type, code, id, strlen(fonction), fonction, '\0');
+    snprintf(request, BUFSIZ, "%c%c%03d%s%c", type, code, strlen(fonction), fonction, '\0');
 
     free(fonction);
     return request;
