@@ -71,7 +71,11 @@ int traiterRequeteTCP(int* socket, char* (fonctionHandleRequest)(char*)) {
 					free(answer);
 					return -1;
 				} else {
+<<<<<<< HEAD
 					printf("Ecriture réussie\n");
+=======
+					printf("Ecriture réussie : %s\n", answer);
+>>>>>>> upstream/master
 				}
 				free(answer);
 			}
@@ -103,7 +107,11 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 			free(answer);
 			return -1;
 		} else {
+<<<<<<< HEAD
 			printf("Ecriture réussie\n");
+=======
+			printf("Ecriture réussie : %s\n",answer);
+>>>>>>> upstream/master
 		}
 		free(answer);
 	}
@@ -161,9 +169,13 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 	while(1) {
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
+<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
 			printf("FD_SET %d\n", i);
+=======
+		for(i = 0; i < nbSockets; i++) {
+>>>>>>> upstream/master
 			FD_SET(descripteursSockets[i], &readFds);
 		}
 		//Fin initialisation des descripteurs à lire
@@ -210,7 +222,11 @@ int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, 
 		serverPollingLoop
 ***************************/
 int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial) {
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> upstream/master
 	clientUDP clUDP;
 
 	fd_set readFds;
@@ -261,9 +277,13 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 	while(1) {
 		//Initialisation de l'ensemble des descripteurs à lire
 		FD_ZERO(&readFds);
+<<<<<<< HEAD
 		printf("FD_ZERO\n");
 		for(i = 0; i < nbSockets; i++) {
 			printf("FD_SET %d\n", i);
+=======
+		for(i = 0; i < nbSockets; i++) {
+>>>>>>> upstream/master
 			FD_SET(descripteursSockets[i], &readFds);
 		}
 		//Fin initialisation des descripteurs à lire
@@ -561,7 +581,11 @@ int envoyerRequeteUDP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		free(request);
 		return -1;
 	} else {
+<<<<<<< HEAD
 		printf("Ecriture réussie\n");
+=======
+		printf("Ecriture réussie : %s\n", request);
+>>>>>>> upstream/master
 		if(recvfrom(*socket, answer, BUFSIZ, 0, (struct sockaddr *) adresseDistante, (socklen_t *) &lenghtOfFrom) < 0) {
 			perror("Erreur recvfrom");
 			free(request);
@@ -599,7 +623,11 @@ int envoyerRequeteTCP(int* socket, struct sockaddr_in* adresseDistante, char* (f
 		free(request);
 		return -1;
 	} else {
+<<<<<<< HEAD
 		printf("Ecriture réussie\n");
+=======
+		printf("Ecriture réussie : %s\n", request);
+>>>>>>> upstream/master
 		if(read(*socket, answer, BUFSIZ) < 0) {
 			perror("Erreur read");
 			free(request);

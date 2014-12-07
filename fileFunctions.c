@@ -44,7 +44,7 @@ int FermerFichier(FILE* fichier) {
 		EcrireLigne
 ***************************/
 int EcrireLigne(FILE* fichier, char* chaine) {
-	if (fwrite(chaine, strlen(chaine), 1, fichier) == 0) {
+	if (fprintf(fichier,"%s", chaine) < 0) {
 		return -1;
 	}
 	return 0;
@@ -59,7 +59,9 @@ int LireLigne(FILE* fichier, int ligne, char* buffer) {
 	while(fgets(buffer, BUFSIZ, fichier) != NULL && i < ligne) {
 		i++;
 	}
-	return 0;
+	if(i < ligne)
+        return -1;
+    return 0;
 }
 
 /***************************

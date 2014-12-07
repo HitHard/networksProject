@@ -14,12 +14,14 @@
 #include <memory.h>         // Contient l'inclusion de string.h (s'il n'est pas déjà inclus) et de features.h
 #include <errno.h>          // Fichier d'en-têtes pour la gestion des erreurs (notamment perror())
 #include <time.h>
-#include <pthread.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include "tools.h"
 #include "fileFunctions.h"
+<<<<<<< HEAD
+=======
+
+#define MAX_ATTENTE_CSMA 4
+#define FILE_NAME .ressource
+>>>>>>> upstream/master
 
 /**
 * Fonction d'initialisation de la mémoire partagée pour le protocole Test
