@@ -11,7 +11,7 @@ typedef struct {
 
 typedef struct {
     int inUse;
-} csmaCDSharedDatas;
+} demandeSharedDatas;
 
 /***************************
 		testSharedInitializer
@@ -69,29 +69,73 @@ int handleTestAnswer(char * answer) {
 		csmaCDSharedInitializer
 ***************************/
 int csmaCDSharedInitializer(void) {
-    sharedDatas = (csmaCDSharedDatas*) malloc(sizeof(csmaCDSharedDatas));
-
-    //Comme le pointeur est de type void*, on spécifie explicitement que c'est un pointeur sur une structure testSharedData
-    csmaCDSharedDatas* datas = sharedDatas;
-    datas->inUse = 0;
-    return 0;
+    return demandeSharedInitializer();
 }
 
 /***************************
 		csmaCDSharedCleaner
 ***************************/
 int csmaCDSharedCleaner(void) {
-    csmaCDSharedDatas* datas = sharedDatas;
-    free(datas);
-    return 0;
+    return demandeSharedCleaner();
 }
 
 /***************************
 		handleCsmaCDRequest
 ***************************/
 char* handleCsmaCDRequest(char* request) {
+    return handleDemandeRequest(request);
+}
+
+
+/***************************
+		generateCsmaCDRequest
+***************************/
+char* generateCsmaCDRequest() {
+    return generateDemandeRequest();
+}
+
+/***************************
+		handleCsmaCDAnswer
+***************************/
+int handleCsmaCDAnswer(char * answer) {
+    int code;
+    if( (code = handleDemandeAnswer(answer)) == 1) {
+        int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
+        printf("Attente de %d secondes...\n", attente);
+        sleep(attente);
+        printf("Reprise...\n");
+    } else {
+        return code;
+    }
+}
+
+/***************************
+		demandeSharedInitializer
+***************************/
+int demandeSharedInitializer(void) {
+    sharedDatas = (demandeSharedDatas*) malloc(sizeof(demandeSharedDatas));
+
+    //Comme le pointeur est de type void*, on spécifie explicitement que c'est un pointeur sur une structure testSharedData
+    demandeSharedDatas* datas = sharedDatas;
+    datas->inUse = 0;
+    return 0;
+}
+
+/***************************
+		demandeSharedCleaner
+***************************/
+int demandeSharedCleaner(void) {
+    demandeSharedDatas* datas = sharedDatas;
+    free(datas);
+    return 0;
+}
+
+/***************************
+		handleDemandeRequest
+***************************/
+char* handleDemandeRequest(char* request) {
     char* answerFonction = (char*) malloc(BUFSIZ * sizeof(char));
-    csmaCDSharedDatas* datas = sharedDatas;
+    demandeSharedDatas* datas = sharedDatas;
     FILE* ressource = NULL;
     trame* donnees = extractDatas(request);
     char* token = strtok(donnees->fonction, ",");
@@ -148,9 +192,9 @@ char* handleCsmaCDRequest(char* request) {
 
 
 /***************************
-		generateCsmaCDRequest
+		generateDemandeRequest
 ***************************/
-char* generateCsmaCDRequest() {
+char* generateDemandeRequest() {
     time_t now;
     trame datas;
     datas.type = 'Q';
@@ -183,9 +227,9 @@ char* generateCsmaCDRequest() {
 }
 
 /***************************
-		handleCsmaCDAnswer
+		handleDemandeAnswer
 ***************************/
-int handleCsmaCDAnswer(char * answer) {
+int handleDemandeAnswer(char * answer) {
     trame* donnees = extractDatas(answer);
 
     char* token = strtok(donnees->fonction, ",");
@@ -204,10 +248,10 @@ int handleCsmaCDAnswer(char * answer) {
         }
     } else if(donnees->code == 'E') {
         if(strcmp(token, "SB") == 0) {
-            int attente = entierAleatoireEntreBorne(0, MAX_ATTENTE_CSMA);
-            printf("Serveur occupé, attente de %d secondes...\n", attente);
-            sleep(attente);
-            printf("Reprise...\n");
+            printf("Serveur occupé...\n");
+            free(donnees->fonction);
+            free(donnees);
+            return 1;
         } else {
             printf("Erreur, code erreur = %s\n", token);
         }

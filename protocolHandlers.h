@@ -101,6 +101,46 @@ char* generateCsmaCDRequest();
 int handleCsmaCDAnswer(char * answer);
 
 /**
+* Fonction d'initialisation de la mémoire partagée pour le protocole Demande
+*
+* @return 0 si l'initialisation reussie, -1 en cas d'erreur
+*/
+int demandeSharedInitializer(void);
+
+/**
+* Fonction de nettoyage de la mémoire partagée pour le protocole Demande
+*
+* @return 0 si l'initialisation reussie, -1 en cas d'erreur
+*/
+int demandeSharedCleaner(void);
+
+/**
+* Fonction de traitement cote serveur - protocole Demande
+* Lit le message de la requete et genere une reponse contenant ce message suffixe par " - OK"
+* @param request : chaine de caractere de la requete
+*
+* @return la chaine de caractere de la reponse (request + " - OK")
+*/
+char* handleDemandeRequest(char* request);
+
+/**
+* Fonction de generation de requete cote client - protocole Demande
+* Genere un message contenant le pid et le temps local
+*
+* @return la chaine de caractere de la requete
+*/
+char* generateDemandeRequest();
+
+/**
+* Fonction de generation de reponse cote client - protocole Demande
+* Affiche simplement le message retourne par le serveur
+*
+* @param answer : la chaine de caractere de la reponse du serveur
+* @return 1 si le serveur est occupe, 0 sinon
+*/
+int handleDemandeAnswer(char * answer);
+
+/**
 * Fonction de generation de requete cote client - protocole Polling
 * Genere un message contenant le pid et le temps local
 *

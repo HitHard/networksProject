@@ -2,7 +2,7 @@
 #define ATTENTE_MAX 5
 #define SLEEP_CLIENT_MIN 0
 #define SLEEP_CLIENT_MAX 5
-#define PROTOCOL_HANDLERS_COUNT 2
+#define PROTOCOL_HANDLERS_COUNT 3
 
 /***************************
 		CreerSocket
@@ -114,9 +114,9 @@ int traiterRequeteUDP(int* socket, char* (fonctionHandleRequest)(char*)) {
 		serverLoop
 ***************************/
 int serverLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portInitial, int protocolHandlerId) {
-	int (*protocolSharedInitializer[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedInitializer, csmaCDSharedInitializer};
-	int (*protocolSharedCleaner[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedCleaner, csmaCDSharedCleaner};
-	char* (*protocolHandlers[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestRequest, handleCsmaCDRequest};
+	int (*protocolSharedInitializer[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedInitializer, csmaCDSharedInitializer, demandeSharedInitializer};
+	int (*protocolSharedCleaner[PROTOCOL_HANDLERS_COUNT])(void) = {testSharedCleaner, csmaCDSharedCleaner, demandeSharedCleaner};
+	char* (*protocolHandlers[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestRequest, handleCsmaCDRequest, handleDemandeRequest};
 
 	fd_set readFds;
 	int descripteursSockets[nbSocketsTCP + nbSocketsUDP];
@@ -334,8 +334,8 @@ int serverPollingLoop(u_short nbSocketsTCP, u_short nbSocketsUDP, u_short portIn
 		clientLoop
 ***************************/
 int clientLoop(int protocolType, char* nomDistant, u_short portDistant, int protocolHandlerId) {
-	char* (*fonctionGenerateRequest[PROTOCOL_HANDLERS_COUNT])(void) = {generateTestRequest, generateCsmaCDRequest};
-	int (*fonctionHandleAnswer[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestAnswer, handleCsmaCDAnswer};
+	char* (*fonctionGenerateRequest[PROTOCOL_HANDLERS_COUNT])(void) = {generateTestRequest, generateCsmaCDRequest, generateDemandeRequest};
+	int (*fonctionHandleAnswer[PROTOCOL_HANDLERS_COUNT])(char*) = {handleTestAnswer, handleCsmaCDAnswer, handleDemandeAnswer};
 
 	int socket;
 	struct hostent* hoteDistant;

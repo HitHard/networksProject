@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         perror("Port distant non specifié");
         exit(-1);
     } else if(argc < 5) {
-        perror("Protocole session a utiliser non spécifié (0->Test)");
+        perror("Protocole session a utiliser non spécifié (0->Test, 1->CSMA/CD, 2->Demande, 3->Polling)");
         exit(-1);
     } else if(argc > 5) {
         perror("Trop d'arguments");
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
 
-    if(protocoleSession != 2 ){
+    if(protocoleSession < 3 ){
         if(clientLoop(protocoleTypes[protocole], argv[2], portDistant, protocoleSession) < 0) {
             perror("Erreur clientPollingLoop");
             exit(-1);
